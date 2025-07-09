@@ -23,12 +23,16 @@ const Dashboard = () => {
   const { data: upcomingAppointments, isLoading: loadingAppointments } = useQuery({
     queryKey: ['upcomingAppointments'],
     queryFn: appointmentService.getUpcomingAppointments,
+    enabled: !!user, // Solo ejecutar si hay usuario autenticado
+    retry: false,
   });
 
   // Obtener resumen del expediente médico
   const { data: medicalSummary, isLoading: loadingSummary } = useQuery({
     queryKey: ['medicalSummary'],
     queryFn: medicalRecordService.getMedicalSummary,
+    enabled: !!user, // Solo ejecutar si hay usuario autenticado
+    retry: false,
   });
 
   const statsCards = [

@@ -8,6 +8,14 @@ const medicalRecordService = {
       return response.data;
     } catch (error) {
       console.error('Error al obtener resumen del expediente médico:', error);
+      if (error.response?.status === 401) {
+        // Si es error de autenticación, retornar objeto vacío sin redirigir
+        return {
+          total_visits: 0,
+          active_prescriptions: 0,
+          pending_exams: 0
+        };
+      }
       return null;
     }
   },

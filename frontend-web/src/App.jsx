@@ -6,6 +6,12 @@ import { AuthProvider } from './contexts/AuthContext';
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
 import Dashboard from './pages/Dashboard';
+import Appointments from './pages/Appointments';
+import NewAppointment from './pages/NewAppointment';
+import AppointmentDetails from './pages/AppointmentDetails';
+import MedicalHistory from './pages/MedicalHistory';
+import Prescriptions from './pages/Prescriptions';
+import Profile from './pages/Profile';
 import AuthLayout from './components/layout/AuthLayout';
 import './index.css';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -95,6 +101,54 @@ function App() {
                 element={
                   <PrivateRoute>
                     <Dashboard />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/appointments" 
+                element={
+                  <PrivateRoute>
+                    <Appointments />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/appointments/new" 
+                element={
+                  <PrivateRoute>
+                    <NewAppointment />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/appointments/:id" 
+                element={
+                  <PrivateRoute>
+                    <AppointmentDetails />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/medical-history" 
+                element={
+                  <PrivateRoute>
+                    <MedicalHistory />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/prescriptions" 
+                element={
+                  <PrivateRoute>
+                    <Prescriptions />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <PrivateRoute>
+                    <Profile />
                   </PrivateRoute>
                 } 
               />

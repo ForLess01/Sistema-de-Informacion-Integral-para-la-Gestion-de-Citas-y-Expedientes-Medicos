@@ -33,10 +33,21 @@ api.interceptors.response.use(
   (error) => {
     // Si el error es 401 (no autorizado), limpiar el token y redirigir al login
     if (error.response?.status === 401) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Solo redirigir si no estamos en una ruta pública
+      const publicPaths = ['/login', '/register', '/', '/api/v1/appointments/upcoming/', '/api/v1/medical-records/summary/'];
+      const currentPath = window.location.pathname;
+      const isPublicPath = publicPaths.some(path => currentPath.includes(path));
+      
+      // Si es una llamada específica al dashboard, no redirigir
+      const isDashboardCall = error.config?.url?.includes('/appointments/upcoming/') || 
+                            error.config?.url?.includes('/medical-records/summary/');
+      
+      if (!isPublicPath && !isDashboardCall) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

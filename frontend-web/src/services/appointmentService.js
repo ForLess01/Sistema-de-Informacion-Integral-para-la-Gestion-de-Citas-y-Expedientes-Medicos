@@ -72,6 +72,10 @@ const appointmentService = {
       return response.data;
     } catch (error) {
       console.error('Error al obtener citas próximas:', error);
+      if (error.response?.status === 401) {
+        // Si es error de autenticación, retornar array vacío sin redirigir
+        return [];
+      }
       return [];
     }
   },
