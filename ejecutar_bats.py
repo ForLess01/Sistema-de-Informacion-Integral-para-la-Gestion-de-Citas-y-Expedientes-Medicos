@@ -1,6 +1,8 @@
 import subprocess
 
 batch_files = [
+    "setup_backend.bat",
+    "setup_frontend_web.bat",
     "setup_frontend_desktop.bat",
     "dev.bat"
 ]

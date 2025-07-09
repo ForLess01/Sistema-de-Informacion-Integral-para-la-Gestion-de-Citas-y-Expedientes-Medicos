@@ -11,7 +11,7 @@ if %errorlevel% neq 0 (
 )
 
 start "Django Backend" cmd /k "cd backend && venv\Scripts\activate && python manage.py runserver"
-start "React Web" cmd /k "cd frontend-web && npm start"
+start "React Web" cmd /k "cd frontend-web && npm run dev"
 start "Electron Desktop" cmd /k "cd frontend-desktop && npm start"
 
 echo Todos los servicios iniciados!
