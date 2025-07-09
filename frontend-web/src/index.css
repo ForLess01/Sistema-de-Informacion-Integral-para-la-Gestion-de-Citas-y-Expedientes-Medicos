@@ -1,68 +1,101 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* Estilos base */
+@layer base {
+  body {
+    @apply antialiased;
   }
-  a:hover {
-    color: #747bff;
+}
+
+/* Componentes liquid glass */
+@layer components {
+  /* Efecto glass básico */
+  .glass {
+    @apply backdrop-blur-md bg-white/10 border border-white/20 shadow-xl;
   }
-  button {
-    background-color: #f9f9f9;
+  
+  /* Variantes de glass */
+  .glass-light {
+    @apply backdrop-blur-sm bg-white/5 border border-white/10;
+  }
+  
+  .glass-dark {
+    @apply backdrop-blur-lg bg-black/20 border border-white/10;
+  }
+  
+  /* Botones glass */
+  .btn-glass {
+    @apply glass px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:bg-white/20 hover:shadow-2xl hover:scale-105 active:scale-95;
+  }
+  
+  .btn-glass-primary {
+    @apply btn-glass bg-blue-500/20 text-blue-100 hover:bg-blue-500/30 border-blue-400/30;
+  }
+  
+  .btn-glass-secondary {
+    @apply btn-glass bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30 border-emerald-400/30;
+  }
+  
+  /* Cards glass */
+  .card-glass {
+    @apply glass rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl;
+  }
+  
+  /* Inputs glass */
+  .input-glass {
+    @apply glass rounded-lg px-4 py-3 w-full bg-white/5 placeholder-white/50 text-white focus:outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/10 transition-all duration-300;
+  }
+  
+  /* Animación de fondo líquido */
+  .liquid-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #667eea 100%);
+    background-size: 400% 400%;
+    animation: gradient-shift 15s ease infinite;
+  }
+  
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  /* Burbujas flotantes */
+  .bubble {
+    @apply absolute rounded-full bg-white/10 backdrop-blur-sm animate-float;
+  }
+  
+  /* Efectos de hover para elementos médicos */
+  .medical-card {
+    @apply card-glass relative overflow-hidden;
+  }
+  
+  .medical-card::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-400/20 opacity-0 transition-opacity duration-300;
+  }
+  
+  .medical-card:hover::before {
+    @apply opacity-100;
+  }
+}
+
+/* Utilidades personalizadas */
+@layer utilities {
+  /* Texto con gradiente */
+  .text-gradient {
+    @apply bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent;
+  }
+  
+  /* Sombras suaves */
+  .shadow-glass {
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+  
+  /* Blur personalizado */
+  .blur-glass {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 }
