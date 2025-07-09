@@ -1,3 +1,7 @@
+# Production dependencies
+# Optimized for production deployment
+# Install with: pip install -r requirements-prod.txt
+
 # Core Django
 Django==5.2.3
 
@@ -33,17 +37,11 @@ reportlab==4.2.5
 # Configuration Management
 python-decouple==3.8
 
-# Development Tools
-django-extensions==3.2.3
-factory-boy==3.3.1
-Faker==30.0.0
-django-debug-toolbar==5.2.0
-
 # Production Server
 whitenoise==6.8.2
 gunicorn==23.0.0
 
-# Additional dependencies
+# Essential dependencies
 amqp==5.3.1
 asgiref==3.8.1
 billiard==4.2.1
@@ -53,7 +51,6 @@ click==8.1.7
 click-didyoumean==0.3.1
 click-plugins==1.1.1
 click-repl==0.3.0
-colorama==0.4.6
 idna==3.10
 kombu==5.4.2
 prompt-toolkit==3.0.48
@@ -65,8 +62,12 @@ urllib3==2.2.3
 vine==5.1.0
 wcwidth==0.2.13
 
-# Optional: For YAML support in Django fixtures
+# Production monitoring (optional but recommended)
+sentry-sdk==2.18.0
+django-environ==0.12.0
+
+# YAML support for fixtures
 PyYAML==6.0.2
 
-# Optional: For better timezone support
+# Timezone support
 pytz==2024.2

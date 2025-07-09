@@ -10,9 +10,9 @@ if %errorlevel% neq 0 (
     echo Redis ya está corriendo en Docker
 )
 
-start "Django Backend" cmd /k "cd backend && venv\Scripts\activate && python manage.py runserver"
+start "Django Backend" cmd /k "cd backend && python manage.py runserver"
 start "React Web" cmd /k "cd frontend-web && npm run dev"
-start "Electron Desktop" cmd /k "cd frontend-desktop && npm start"
+start "Electron Desktop" cmd /k "cd frontend-desktop && npm run dev"
 
 echo Todos los servicios iniciados!
 echo Backend: http://localhost:8000
