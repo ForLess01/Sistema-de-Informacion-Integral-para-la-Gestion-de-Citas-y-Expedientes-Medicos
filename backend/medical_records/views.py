@@ -32,7 +32,7 @@ class MedicalRecordViewSet(viewsets.ViewSet):
             'active_prescriptions': 3,
             'pending_lab_results': 1,
             'last_visit': None,
-            'total_diagnoses': 5,
+            'total_records': 5,  # Cambiado de total_diagnoses a total_records
             'recent_vital_signs': None
         }
         serializer = MedicalSummarySerializer(summary)
