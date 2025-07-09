@@ -1,8 +1,91 @@
-venv/
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Entorno virtual
+venv/
+.env
+.env.*
+
+# Archivos de log y cachés
+*.log
+*.pot
 *.pyc
 *.pyo
 *.pyd
-*.log
-.env
+*.sqlite3
+
+# Configuración local de IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Archivos de sistema
 .DS_Store
+Thumbs.db
+
+# Archivos de compilación
+build/
+dist/
+
+# Node.js (si tienes frontend con Vite/React)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos frontend generados
+*.local
+*.cache
+*.lock
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Archivos temporales
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# Django
+db.sqlite3
+staticfiles/
+media/
+celerybeat-schedule
+*.pid
+
+# Coverage
+htmlcov/
+.coverage
+.tox/
+.nox/
+.cache/
+
+# Pytest
+.pytest_cache/
+
+# Pipenv
+Pipfile.lock
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Coverage reports
+coverage.xml
+
+# Test output
+junit-*.xml
+
+# VS Code profiling
+profile_default/
+
+# Python wheels
+*.whl
+
+# Backup files
+*.orig
