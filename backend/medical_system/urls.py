@@ -26,6 +26,7 @@ def welcome_view(request):
             'pharmacy': '/api/v1/pharmacy/',
             'emergency': '/api/v1/emergency/',
             'reports': '/api/v1/reports/',
+            'notifications': '/api/v1/notifications/',
             'external_api': '/api/v1/external/',
         }
     })
@@ -44,6 +45,7 @@ urlpatterns = [
     path('api/v1/pharmacy/', include('pharmacy.urls')),
     path('api/v1/emergency/', include('emergency.urls')),
     path('api/v1/reports/', include('reports.urls')),
+    path('api/v1/notifications/', include('notifications.urls')),
     
     # API Externa para otros sistemas
     path('api/v1/external/', include('api_external.urls')),

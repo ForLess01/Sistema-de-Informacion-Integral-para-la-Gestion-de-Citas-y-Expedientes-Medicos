@@ -39,6 +39,7 @@ LOCAL_APPS = [
     'emergency',
     'reports',
     'api_external',
+    'notifications',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -258,3 +259,18 @@ AUTH_USER_MODEL = 'authentication.User'
 # API Externa
 EXTERNAL_API_KEY_LENGTH = config('EXTERNAL_API_KEY_LENGTH', default=32, cast=int)
 EXTERNAL_API_RATE_LIMIT = config('EXTERNAL_API_RATE_LIMIT', default=100, cast=int)
+
+# Configuración SMS
+SMS_API_KEY = config('SMS_API_KEY', default='')
+SMS_API_URL = config('SMS_API_URL', default='')
+SMS_FROM_NUMBER = config('SMS_FROM_NUMBER', default='Medical System')
+
+# Configuración Firebase para Push Notifications
+FIREBASE_SERVER_KEY = config('FIREBASE_SERVER_KEY', default='')
+FIREBASE_SENDER_ID = config('FIREBASE_SENDER_ID', default='')
+
+# Configuración de notificaciones
+NOTIFICATION_QUIET_HOURS_START = config('NOTIFICATION_QUIET_HOURS_START', default='22:00')
+NOTIFICATION_QUIET_HOURS_END = config('NOTIFICATION_QUIET_HOURS_END', default='07:00')
+NOTIFICATION_MAX_RETRIES = config('NOTIFICATION_MAX_RETRIES', default=3, cast=int)
+NOTIFICATION_RETRY_DELAY = config('NOTIFICATION_RETRY_DELAY', default=300, cast=int)  # 5 minutos
