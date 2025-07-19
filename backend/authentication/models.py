@@ -63,7 +63,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=100)
     
     # Información personal
-    dni = models.CharField(
+    dni = EncryptedCharField(
         max_length=20,
         unique=True,
         null=True,
@@ -71,7 +71,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         validators=[RegexValidator(r'^[0-9]+$', 'Solo se permiten números')],
         verbose_name='DNI'
     )
-    identification_number = models.CharField(
+    identification_number = EncryptedCharField(
         max_length=20,
         unique=True,
         null=True,
