@@ -48,6 +48,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('admin', 'Administrador'),
         ('pharmacist', 'Farmaceutico'),
         ('emergency', 'Personal de Emergencias'),
+        ('obstetriz', 'Obstetriz'),
+        ('odontologo', 'Odontólogo'),
     ]
     
     GENDER_CHOICES = [

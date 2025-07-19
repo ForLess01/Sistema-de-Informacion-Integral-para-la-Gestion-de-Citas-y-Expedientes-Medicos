@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth import get_user_model
 from django.utils.html import format_html
 from appointments.models import MedicalSchedule, Specialty
+from .models import DoctorProfile, PatientProfile
 
 User = get_user_model()
 
@@ -26,10 +27,10 @@ class DoctorUserAdmin(UserAdmin):
     """Admin personalizado para usuarios con funcionalidades médicas"""
     
     # Campos adicionales en la lista
-    list_display = UserAdmin.list_display + ('get_specialties_display', 'get_schedule_count')
+    list_display = UserAdmin.list_display + ('get_role_display', 'get_specialties_display', 'get_schedule_count')
     
     # Filtros mejorados
-    list_filter = UserAdmin.list_filter + ('medical_schedules__specialty',)
+    list_filter = UserAdmin.list_filter + ('role', 'medical_schedules__specialty')
     
     # Búsquedas mejoradas
     search_fields = UserAdmin.search_fields + ('medical_schedules__specialty__name',)
@@ -37,8 +38,33 @@ class DoctorUserAdmin(UserAdmin):
     # Incluir horarios médicos como inline
     inlines = [MedicalScheduleInline]
     
+    # Fieldsets personalizados para incluir el rol
+    fieldsets = UserAdmin.fieldsets + (
+        ('Rol del Sistema', {'fields': ('role',)}),
+    )
+    
     # Acciones personalizadas
     actions = list(UserAdmin.actions or []) + ['activate_doctors', 'deactivate_doctors', 'mark_as_medical_staff']
+    
+    def get_role_display(self, obj):
+        """Mostrar el rol con emoji y color"""
+        role_info = {
+            'patient': ('🧍', 'Paciente', '#6c757d'),
+            'doctor': ('👨‍⚕️', 'Doctor', '#28a745'),
+            'nurse': ('👩‍⚕️', 'Enfermero/a', '#17a2b8'),
+            'pharmacist': ('💊', 'Farmacéutico', '#e83e8c'),
+            'receptionist': ('📋', 'Administrativo', '#ffc107'),
+            'emergency': ('🚑', 'Emergencias', '#dc3545'),
+            'admin': ('⚙️', 'Administrador', '#6f42c1')
+        }
+        
+        emoji, name, color = role_info.get(obj.role, ('👤', obj.role, '#6c757d'))
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{} {}</span>',
+            color, emoji, name
+        )
+    get_role_display.short_description = 'Rol'
+    get_role_display.admin_order_field = 'role'
     
     def get_specialties_display(self, obj):
         """Mostrar especialidades del doctor"""
