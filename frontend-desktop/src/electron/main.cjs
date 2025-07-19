@@ -285,26 +285,50 @@ ipcMain.handle('login-success', async () => {
     // PROTECCIÓN 5: Establecer flag de creación
     isMainWindowCreating = true;
     
-    // Cerrar ventana de login primero
-    if (loginWindow && !loginWindow.isDestroyed()) {
-      console.log('🚪 CLOSING: Cerrando ventana de login');
-      loginWindow.close();
-      loginWindow = null;
-    }
-    
-    // Esperar un poco para asegurar que la ventana se cierre
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Crear ventana principal
+    // Crear ventana principal ANTES de cerrar login
     console.log('🏗️  CREATING: Nueva ventana principal');
     createMainWindow();
     
-    // Resetear flags después de crear la ventana
-    isMainWindowCreating = false;
-    isProcessingLogin = false;
-    
-    console.log('✅ SUCCESS: Ventana principal creada exitosamente');
-    return { success: true, message: 'New window created' };
+    // Esperar a que la ventana principal esté lista antes de cerrar login
+    return new Promise((resolve) => {
+      const onMainWindowReady = () => {
+        console.log('✅ MAIN WINDOW READY: Ventana principal mostrada');
+        
+        // Ahora cerrar ventana de login
+        if (loginWindow && !loginWindow.isDestroyed()) {
+          console.log('🚪 CLOSING: Cerrando ventana de login');
+          loginWindow.close();
+          loginWindow = null;
+        }
+        
+        // Resetear flags después de completar todo
+        isMainWindowCreating = false;
+        isProcessingLogin = false;
+        
+        console.log('✅ SUCCESS: Transición completada exitosamente');
+        resolve({ success: true, message: 'Window transition completed' });
+      };
+      
+      // Si la ventana ya está lista, proceder inmediatamente
+      if (mainWindow && mainWindow.isVisible()) {
+        onMainWindowReady();
+      } else {
+        // Esperar al evento ready-to-show
+        mainWindow.once('ready-to-show', onMainWindowReady);
+        
+        // Timeout de seguridad por si algo falla
+        setTimeout(() => {
+          console.log('⏰ TIMEOUT: Forzando cierre de login por timeout');
+          if (loginWindow && !loginWindow.isDestroyed()) {
+            loginWindow.close();
+            loginWindow = null;
+          }
+          isMainWindowCreating = false;
+          isProcessingLogin = false;
+          resolve({ success: true, message: 'Window transition completed with timeout' });
+        }, 5000); // 5 segundos de timeout
+      }
+    });
     
   } catch (error) {
     console.error('❌ ERROR en login-success:', error);
