@@ -257,24 +257,37 @@ class EmailService:
                     
             else:
                 # Probar configuración Django SMTP
-                from django.core.mail import get_connection
+                backend_class = getattr(settings, 'EMAIL_BACKEND', '')
                 
-                connection = get_connection(fail_silently=False)
-                connection.open()
-                
-                if connection.connection is not None:
+                if 'console' in backend_class.lower():
+                    # Console backend siempre funciona
                     test_result['success'] = True
-                    test_result['message'] = 'Django SMTP connection successful'
+                    test_result['message'] = 'Django Console Email Backend (development mode)'
                     test_result['details'] = {
-                        'host': getattr(settings, 'EMAIL_HOST', ''),
-                        'port': getattr(settings, 'EMAIL_PORT', ''),
-                        'use_tls': getattr(settings, 'EMAIL_USE_TLS', False),
-                        'use_ssl': getattr(settings, 'EMAIL_USE_SSL', False)
+                        'backend': backend_class,
+                        'mode': 'console',
+                        'note': 'Emails se muestran en la consola para desarrollo'
                     }
                 else:
-                    test_result['message'] = 'Failed to establish SMTP connection'
-                
-                connection.close()
+                    # Probar conexión SMTP real
+                    from django.core.mail import get_connection
+                    
+                    connection = get_connection(fail_silently=False)
+                    connection.open()
+                    
+                    if hasattr(connection, 'connection') and connection.connection is not None:
+                        test_result['success'] = True
+                        test_result['message'] = 'Django SMTP connection successful'
+                        test_result['details'] = {
+                            'host': getattr(settings, 'EMAIL_HOST', ''),
+                            'port': getattr(settings, 'EMAIL_PORT', ''),
+                            'use_tls': getattr(settings, 'EMAIL_USE_TLS', False),
+                            'use_ssl': getattr(settings, 'EMAIL_USE_SSL', False)
+                        }
+                    else:
+                        test_result['message'] = 'Failed to establish SMTP connection'
+                    
+                    connection.close()
             
             return test_result
             

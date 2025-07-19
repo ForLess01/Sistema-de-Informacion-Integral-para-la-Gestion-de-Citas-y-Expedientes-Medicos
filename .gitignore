@@ -89,3 +89,6 @@ profile_default/
 
 # Backup files
 *.orig
+
+# Important
+.env

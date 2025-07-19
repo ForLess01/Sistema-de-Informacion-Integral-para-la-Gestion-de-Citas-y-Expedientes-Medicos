@@ -298,3 +298,13 @@ SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
+
+# Configuración de integraciones externas
+
+# Email Service Configuration
+EMAIL_PROVIDER = config('EMAIL_PROVIDER', default='django')  # 'django', 'sendgrid'
+SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
+
+# Geolocation Service Configuration
+GOOGLE_MAPS_API_KEY = config('GOOGLE_MAPS_API_KEY', default='')
+GEOLOCATION_CACHE_TIMEOUT = config('GEOLOCATION_CACHE_TIMEOUT', default=86400, cast=int)  # 1 día

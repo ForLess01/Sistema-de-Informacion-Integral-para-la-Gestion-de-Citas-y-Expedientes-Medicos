@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recordatorio de Cita Médica</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #f39c12;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #f39c12;
+            margin: 0;
+            font-size: 28px;
+        }
+        .reminder-alert {
+            background-color: #fff3cd;
+            border-left: 4px solid #f39c12;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .appointment-details {
+            background-color: #e6f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #2c5282;
+        }
+        .countdown {
+            background-color: #f39c12;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .actions {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            margin: 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .btn-confirm {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-cancel {
+            background-color: #dc3545;
+            color: white;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 Recordatorio de Cita</h1>
+            <p>Sistema de Información Integral - Centro de Salud</p>
+        </div>
+
+        <div class="reminder-alert">
+            <p><strong>¡No olvide su cita médica!</strong></p>
+            <p>Estimado(a) <strong>{{ patient_name }}</strong>, le recordamos que tiene una cita programada próximamente.</p>
+        </div>
+
+        <div class="countdown">
+            ⏰ Su cita es MAÑANA
+        </div>
+
+        <div class="appointment-details">
+            <h3>📋 Detalles de su cita:</h3>
+            <div class="detail-row">
+                <span class="detail-label">👨‍⚕️ Doctor(a):</span>
+                <span>{{ doctor_name }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">🏥 Especialidad:</span>
+                <span>{{ specialty }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">📅 Fecha:</span>
+                <span>{{ date }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">🕐 Hora:</span>
+                <span>{{ time }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">📍 Ubicación:</span>
+                <span>{{ location|default:"Consultas Externas" }}</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <h3>¿Qué necesita hacer?</h3>
+            <p>Si puede asistir a su cita, no necesita hacer nada. Si no puede asistir, por favor cancele con anticipación.</p>
+            
+            <a href="#" class="btn btn-confirm">✅ Confirmar Asistencia</a>
+            <a href="#" class="btn btn-cancel">❌ Cancelar Cita</a>
+        </div>
+
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4>📝 Recuerde traer:</h4>
+            <ul>
+                <li>✓ Documento de identidad (DNI)</li>
+                <li>✓ Carnet de seguro (si aplica)</li>
+                <li>✓ Exámenes médicos previos</li>
+                <li>✓ Lista de medicamentos que toma actualmente</li>
+                {% if instructions %}
+                <li>✓ {{ instructions }}</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>Sistema de Información Integral - Centro de Salud</p>
+            <p>📞 (01) 123-4567 | 📧 citas@centrodesalud.gob.pe</p>
+            <p><em>Este es un recordatorio automático. No responda a este email.</em></p>
+        </div>
+    </div>
+</body>
+</html>
