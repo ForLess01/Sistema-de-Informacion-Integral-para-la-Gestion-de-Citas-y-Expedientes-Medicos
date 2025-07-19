@@ -279,3 +279,22 @@ NOTIFICATION_RETRY_DELAY = config('NOTIFICATION_RETRY_DELAY', default=300, cast=
 TWO_FACTOR_ISSUER_NAME = config('TWO_FACTOR_ISSUER_NAME', default='Sistema Médico Integral')
 TWO_FACTOR_TOKEN_VALIDITY_WINDOW = config('TWO_FACTOR_TOKEN_VALIDITY_WINDOW', default=1, cast=int)
 TWO_FACTOR_BACKUP_TOKEN_COUNT = config('TWO_FACTOR_BACKUP_TOKEN_COUNT', default=10, cast=int)
+
+# Configuración de encriptación de datos sensibles
+PGCRYPTO_KEY = config('PGCRYPTO_KEY', default='medical-system-default-key-change-in-production')
+ENCRYPTION_ENABLED = config('ENCRYPTION_ENABLED', default=True, cast=bool)
+
+# Configuración HTTPS
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=31536000, cast=int)  # 1 año
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True, cast=bool)
+SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=True, cast=bool)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+
+# Cookies seguras
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True

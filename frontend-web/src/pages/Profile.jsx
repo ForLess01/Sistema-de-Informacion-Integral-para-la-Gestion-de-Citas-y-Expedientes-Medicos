@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, Calendar, MapPin, Camera, Save, ChevronLeft, Lock, Bell, Shield } from 'lucide-react';
@@ -44,6 +44,22 @@ const Profile = () => {
     email_results: true,
     email_promotions: false,
   });
+
+  // Sincronizar formData cuando el usuario cambie
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        birth_date: user.birth_date || '',
+        emergency_contact: user.emergency_contact || '',
+        emergency_phone: user.emergency_phone || '',
+      });
+    }
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

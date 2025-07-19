@@ -102,6 +102,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Obtener el usuario autenticado
         user = self.user
         
+        # Serializar información del usuario
+        user_serializer = UserSerializer(user)
+        
         # Agregar información sobre 2FA
         data['two_factor_enabled'] = user.two_factor_enabled
         data['requires_2fa'] = user.two_factor_enabled
@@ -111,6 +114,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             data.pop('refresh', None)
             data.pop('access', None)
             data['message'] = 'Se requiere código de autenticación de dos factores'
+        else:
+            # Si no tiene 2FA, incluir la información del usuario completa
+            data['user'] = user_serializer.data
         
         return data
     

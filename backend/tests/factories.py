@@ -93,7 +93,6 @@ class PharmacistFactory(UserFactory):
     role = 'pharmacist'
     professional_id = factory.Sequence(lambda n: f'CFP{30000 + n}')
 
- 45])
     is_active = True
 
 
