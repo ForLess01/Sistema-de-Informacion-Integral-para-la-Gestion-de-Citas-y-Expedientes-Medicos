@@ -1,8 +1,8 @@
-# Sistema de Notificaciones - Medical System
+# Sistema Administrador-SIIGCEM🩺 - Medical System
 
 ## Descripción
 
-El sistema de notificaciones es un módulo integral que permite enviar comunicaciones automáticas a usuarios del sistema médico a través de múltiples canales: email, SMS, notificaciones push y notificaciones in-app.
+El Sistema Administrador-SIIGCEM🩺 es un módulo integral que permite enviar comunicaciones automáticas a usuarios del sistema médico a través de múltiples canales: email, SMS, notificaciones push y notificaciones in-app.
 
 ## Características Principales
 
@@ -358,7 +358,7 @@ redis-cli monitor
 
 ## Contribución
 
-Para contribuir al desarrollo del sistema de notificaciones:
+Para contribuir al desarrollo del Sistema Administrador-SIIGCEM🩺:
 
 1. Fork el repositorio
 2. Crear una rama para tu feature

@@ -74,7 +74,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo/Title */}
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-white">Sistema Médico</h1>
+              <h1 className="text-xl font-bold text-white">SIIGCEM🩺</h1>
             </div>
 
             {/* Desktop Navigation */}
@@ -99,7 +99,7 @@ const Dashboard = () => {
             {/* User Menu */}
             <div className="flex items-center space-x-4">
               <span className="text-white text-sm hidden md:block">
-                {user?.first_name} {user?.last_name}
+                {user?.first_name}
               </span>
               <button
                 onClick={handleLogout}

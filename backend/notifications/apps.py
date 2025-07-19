@@ -4,7 +4,7 @@ from django.apps import AppConfig
 class NotificationsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'notifications'
-    verbose_name = 'Sistema de Notificaciones'
+    verbose_name = 'Sistema Administrador-SIIGCEM🩺'
     
     def ready(self):
         import notifications.signals

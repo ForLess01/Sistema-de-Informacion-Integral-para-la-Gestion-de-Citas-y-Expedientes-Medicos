@@ -305,6 +305,6 @@ class NotificationLogAdmin(admin.ModelAdmin):
 
 
 # Configuración del sitio admin
-admin.site.site_header = "Sistema de Notificaciones"
-admin.site.site_title = "Notificaciones Admin"
-admin.site.index_title = "Administración de Notificaciones"
+admin.site.site_header = "Sistema Administrador-SIIGCEM🩺"
+admin.site.site_title = "Notificaciones Admin-SIIGCEM🩺"
+admin.site.index_title = "Administración de Notificaciones-SIIGCEM🩺"
