@@ -16,18 +16,33 @@ const Appointments = () => {
   const [filterStatus, setFilterStatus] = useState('all');
 
   // Obtener todas las citas
-  const { data: appointments, isLoading } = useQuery({
+  const { data: appointmentsData, isLoading } = useQuery({
     queryKey: ['appointments'],
     queryFn: appointmentService.getMyAppointments,
   });
 
+  // Extraer array de appointments de la respuesta
+  // El API puede devolver un array directo o un objeto con 'results'
+  const appointments = React.useMemo(() => {
+    if (!appointmentsData) return [];
+    if (Array.isArray(appointmentsData)) return appointmentsData;
+    if (appointmentsData.results && Array.isArray(appointmentsData.results)) {
+      return appointmentsData.results;
+    }
+    return [];
+  }, [appointmentsData]);
+
   // Filtrar citas
-  const filteredAppointments = appointments?.filter(appointment => {
-    const matchesSearch = appointment.doctor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appointment.specialty_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || appointment.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  const filteredAppointments = React.useMemo(() => {
+    if (!Array.isArray(appointments)) return [];
+    
+    return appointments.filter(appointment => {
+      const matchesSearch = appointment.doctor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           appointment.specialty_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = filterStatus === 'all' || appointment.status === filterStatus;
+      return matchesSearch && matchesFilter;
+    });
+  }, [appointments, searchTerm, filterStatus]);
 
   // Mutation para cancelar cita
   const cancelMutation = useMutation({
@@ -177,11 +192,11 @@ const Appointments = () => {
                       </p>
                       <p className="flex items-center">
                         <Calendar className="h-4 w-4 mr-2" />
-                        {format(new Date(appointment.date_time), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+{appointment.date_time ? format(new Date(appointment.date_time), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es }) : 'Fecha no disponible'}
                       </p>
                       <p className="flex items-center">
                         <Clock className="h-4 w-4 mr-2" />
-                        {format(new Date(appointment.date_time), "HH:mm", { locale: es })} hrs
+{appointment.date_time ? format(new Date(appointment.date_time), "HH:mm", { locale: es }) : '--:--'} hrs
                       </p>
                     </div>
                   </div>

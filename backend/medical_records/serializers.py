@@ -108,6 +108,15 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at']
 
 
+class RecentVitalSignsSerializer(serializers.Serializer):
+    """Serializer simple para signos vitales recientes sin dependencias de modelo"""
+    blood_pressure = serializers.CharField(allow_null=True, required=False)
+    heart_rate = serializers.IntegerField(allow_null=True, required=False)
+    temperature = serializers.FloatField(allow_null=True, required=False)
+    weight = serializers.FloatField(allow_null=True, required=False)
+    height = serializers.IntegerField(allow_null=True, required=False)
+
+
 class MedicalSummarySerializer(serializers.Serializer):
     """Serializer para el resumen del expediente médico"""
     patient_name = serializers.CharField()
@@ -117,5 +126,6 @@ class MedicalSummarySerializer(serializers.Serializer):
     active_prescriptions = serializers.IntegerField()
     pending_lab_results = serializers.IntegerField()
     last_visit = serializers.DateTimeField(allow_null=True)
+    total_visits = serializers.IntegerField()
     total_records = serializers.IntegerField()
-    recent_vital_signs = VitalSignsSerializer(allow_null=True)
+    recent_vital_signs = RecentVitalSignsSerializer(allow_null=True)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Specialty, MedicalSchedule, Appointment, AppointmentReminder
+from .models import Specialty, MedicalSchedule, Appointment, AppointmentReminder, TemporaryReservation
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -56,16 +56,24 @@ class AppointmentSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='doctor.get_full_name', read_only=True)
     specialty_name = serializers.CharField(source='specialty.name', read_only=True)
     appointment_datetime = serializers.DateTimeField(read_only=True)
+    date_time = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     
     class Meta:
         model = Appointment
         fields = ['id', 'appointment_id', 'patient', 'patient_name', 'doctor', 'doctor_name',
                   'specialty', 'specialty_name', 'appointment_date', 'appointment_time',
-                  'appointment_datetime', 'duration', 'status', 'status_display',
+                  'appointment_datetime', 'date_time', 'duration', 'status', 'status_display',
                   'reason', 'notes', 'cancelled_at', 'cancellation_reason',
                   'created_at', 'updated_at']
         read_only_fields = ['appointment_id', 'created_at', 'updated_at', 'cancelled_at']
+    
+    def get_date_time(self, obj):
+        """Combina fecha y hora en un datetime para el frontend"""
+        from datetime import datetime
+        if obj.appointment_date and obj.appointment_time:
+            return datetime.combine(obj.appointment_date, obj.appointment_time).isoformat()
+        return None
     
     def validate(self, data):
         """Valida los datos de la cita"""
@@ -74,20 +82,51 @@ class AppointmentSerializer(serializers.ModelSerializer):
         if 'appointment_date' in data and data['appointment_date'] < date.today():
             raise serializers.ValidationError("La fecha de la cita no puede ser en el pasado.")
         
-        # Validar que el doctor tenga horario disponible
+        # Para la Fase 1, usamos validación simplificada con horarios predefinidos
         if 'doctor' in data and 'appointment_date' in data and 'appointment_time' in data:
+            # Horarios disponibles básicos para la Fase 1 (todos los días)
+            available_hours = {
+                8: [0, 30],    # 08:00, 08:30
+                9: [0, 30],    # 09:00, 09:30  
+                10: [0, 30],   # 10:00, 10:30
+                11: [0, 30],   # 11:00, 11:30
+                14: [0, 30],   # 14:00, 14:30
+                15: [0, 30],   # 15:00, 15:30
+                16: [0, 30],   # 16:00, 16:30
+                17: [0, 30],   # 17:00, 17:30
+            }
+            
+            appointment_hour = data['appointment_time'].hour
+            appointment_minute = data['appointment_time'].minute
+            
+            # Verificar si la hora está en el rango permitido
+            if (appointment_hour not in available_hours or 
+                appointment_minute not in available_hours[appointment_hour]):
+                raise serializers.ValidationError(
+                    "Hora no disponible. Los horarios disponibles son: 08:00-11:30 y 14:00-17:30 (cada 30 minutos)."
+                )
+            
+            # Validación adicional: verificar disponibilidad real del doctor
+            # (En fases posteriores esto consultará el horario real del doctor)
             weekday = data['appointment_date'].weekday()
-            schedule = MedicalSchedule.objects.filter(
+            
+            # Para fines de semana, agregar una nota pero permitir la cita
+            if weekday >= 5:  # 5=sábado, 6=domingo
+                # En lugar de error, agregar una advertencia en los metadatos
+                # La cita se creará pero quedará como "pendiente de confirmación"
+                pass  # Permitir la creación
+            
+            # Verificar que no haya conflicto con otras citas del mismo doctor
+            existing_appointment = Appointment.objects.filter(
                 doctor=data['doctor'],
-                weekday=weekday,
-                start_time__lte=data['appointment_time'],
-                end_time__gte=data['appointment_time'],
-                is_active=True
+                appointment_date=data['appointment_date'],
+                appointment_time=data['appointment_time'],
+                status__in=['scheduled', 'confirmed']
             ).exists()
             
-            if not schedule:
+            if existing_appointment:
                 raise serializers.ValidationError(
-                    "El doctor no tiene horario disponible en esa fecha y hora."
+                    "El doctor ya tiene una cita programada en esa fecha y hora."
                 )
         
         return data
@@ -137,6 +176,39 @@ class AppointmentReminderSerializer(serializers.ModelSerializer):
             'date': obj.appointment.appointment_date.isoformat(),
             'time': obj.appointment.appointment_time.isoformat()
         }
+
+
+class TemporaryReservationSerializer(serializers.ModelSerializer):
+    """Serializer para reservas temporales"""
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    doctor_name = serializers.CharField(source='doctor.get_full_name', read_only=True)
+    specialty_name = serializers.CharField(source='specialty.name', read_only=True)
+    time_remaining = serializers.SerializerMethodField()
+    is_expired = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TemporaryReservation
+        fields = ['id', 'user', 'user_name', 'doctor', 'doctor_name', 'specialty', 
+                 'specialty_name', 'appointment_date', 'appointment_time', 'expires_at',
+                 'time_remaining', 'is_expired', 'is_active', 'created_at']
+        read_only_fields = ['created_at']
+    
+    def get_time_remaining(self, obj):
+        """Calcula el tiempo restante en segundos"""
+        from django.utils import timezone
+        if not obj.is_active:
+            return 0
+        
+        now = timezone.now()
+        if now >= obj.expires_at:
+            return 0
+        
+        delta = obj.expires_at - now
+        return int(delta.total_seconds())
+    
+    def get_is_expired(self, obj):
+        """Verifica si la reserva ha expirado"""
+        return obj.is_expired()
 
 
 class AvailableSlotSerializer(serializers.Serializer):

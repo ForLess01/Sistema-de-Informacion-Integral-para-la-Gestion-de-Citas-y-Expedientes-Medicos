@@ -45,7 +45,12 @@ const NewAppointment = () => {
       navigate('/appointments');
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Error al agendar la cita');
+      console.error('❌ Error al crear cita:', error);
+      const errorMessage = error.response?.data?.non_field_errors?.[0] || 
+                          error.response?.data?.detail || 
+                          error.response?.data?.error || 
+                          'Error al agendar la cita';
+      toast.error(errorMessage);
     },
   });
 
@@ -55,16 +60,18 @@ const NewAppointment = () => {
       return;
     }
 
-    const dateTime = new Date(selectedDate);
-    const [hours, minutes] = selectedTime.split(':');
-    dateTime.setHours(parseInt(hours), parseInt(minutes));
-
-    createMutation.mutate({
-      specialty_id: selectedSpecialty.id,
-      doctor_id: selectedDoctor.id,
-      date_time: dateTime.toISOString(),
+    // Formatear datos según lo que espera el backend
+    const appointmentData = {
+      doctor: selectedDoctor.id,  // Backend espera 'doctor', no 'doctor_id'
+      appointment_date: format(selectedDate, 'yyyy-MM-dd'),  // Fecha separada
+      appointment_time: selectedTime + ':00',  // Hora separada con segundos
       reason: reason || 'Consulta general',
-    });
+      notes: reason ? `Especialidad: ${selectedSpecialty.name}. ${reason}` : `Consulta de ${selectedSpecialty.name}`,
+      // El patient se asigna automáticamente en el backend
+    };
+
+    console.log('📤 Enviando datos al backend:', appointmentData);
+    createMutation.mutate(appointmentData);
   };
 
   // Generar días para el calendario

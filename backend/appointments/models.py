@@ -185,6 +185,52 @@ class Appointment(models.Model):
         self.save()
 
 
+class TemporaryReservation(models.Model):
+    """Modelo para reservas temporales de citas"""
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='temporary_reservations',
+        verbose_name='Usuario'
+    )
+    doctor = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='temporary_doctor_reservations',
+        verbose_name='Doctor'
+    )
+    specialty = models.ForeignKey(
+        Specialty,
+        on_delete=models.CASCADE,
+        related_name='temporary_reservations',
+        verbose_name='Especialidad'
+    )
+    appointment_date = models.DateField(verbose_name='Fecha de cita')
+    appointment_time = models.TimeField(verbose_name='Hora de cita')
+    expires_at = models.DateTimeField(verbose_name='Expira en')
+    is_active = models.BooleanField(default=True, verbose_name='Activa')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Reserva Temporal'
+        verbose_name_plural = 'Reservas Temporales'
+        ordering = ['-created_at']
+        unique_together = ['doctor', 'appointment_date', 'appointment_time', 'is_active']
+    
+    def __str__(self):
+        return f"Reserva temporal: {self.user.get_full_name()} - {self.appointment_date} {self.appointment_time}"
+    
+    def is_expired(self):
+        """Verifica si la reserva ha expirado"""
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+    
+    def cancel_reservation(self):
+        """Cancela la reserva temporal"""
+        self.is_active = False
+        self.save()
+
+
 class AppointmentReminder(models.Model):
     """Modelo para recordatorios de citas"""
     REMINDER_TYPE_CHOICES = [
