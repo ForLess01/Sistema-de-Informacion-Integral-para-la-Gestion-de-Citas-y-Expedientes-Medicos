@@ -249,6 +249,17 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             return [permission() for permission in self.permission_classes]
 
     @action(detail=False, methods=['get'])
+    def today(self, request):
+        """Obtener citas de hoy"""
+        from datetime import date
+        # Usar el queryset filtrado por usuario
+        appointments = self.get_queryset().filter(
+            appointment_date=date.today()
+        ).order_by('appointment_time')
+        serializer = self.get_serializer(appointments, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
     def upcoming(self, request):
         """Obtener citas próximas"""
         from datetime import date

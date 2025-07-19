@@ -4,14 +4,20 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 // Habilitar live reload para Electron
 if (isDev) {
-  require('electron-reload')(__dirname, {
-    electron: path.join(__dirname, '..', '..', 'node_modules', '.bin', 'electron'),
-    hardResetMethod: 'exit'
-  });
+  try {
+    require('electron-reload')(__dirname, {
+      electron: path.join(__dirname, '..', '..', 'node_modules', '.bin', 'electron'),
+      hardResetMethod: 'exit'
+    });
+  } catch (e) {
+    // electron-reload no está instalado, continuar sin él
+  }
 }
 
 let mainWindow;
 let loginWindow;
+let isProcessingLogin = false; // Flag global para evitar múltiples procesos de login
+let isMainWindowCreating = false; // Flag para evitar múltiples creaciones de ventana principal
 
 // Configuración del menú de la aplicación
 const createMenu = () => {
@@ -169,15 +175,14 @@ const createMainWindow = () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, '..', 'preload', 'preload.js')
+      preload: path.join(__dirname, 'preload.cjs')
     },
-    icon: path.join(__dirname, '..', 'assets', 'icon.png'),
     show: false
   });
 
   // Cargar la aplicación
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3001');
+    mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
@@ -198,21 +203,21 @@ const createMainWindow = () => {
 // Crear ventana de login
 const createLoginWindow = () => {
   loginWindow = new BrowserWindow({
-    width: 500,
-    height: 700,
+    width: 500,           // 🔧 Ajusta el ancho (era 500)
+    height: 780,          // 🔧 Ajusta el alto (era 700)
     resizable: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, '..', 'preload', 'preload.js')
+      preload: path.join(__dirname, 'preload.cjs')
     },
-    icon: path.join(__dirname, '..', 'assets', 'icon.png'),
     frame: false,
-    transparent: true
+    transparent: true,
+    roundedCorners: true  // 🎨 Esquinas redondeadas (solo en macOS nativamente)
   });
 
   if (isDev) {
-    loginWindow.loadURL('http://localhost:3001/login');
+    loginWindow.loadURL('http://localhost:5173/login');
   } else {
     loginWindow.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'), {
       hash: '/login'
@@ -242,18 +247,102 @@ app.on('window-all-closed', () => {
 });
 
 // IPC Handlers
-ipcMain.handle('login-success', () => {
-  if (loginWindow) {
-    loginWindow.close();
+ipcMain.handle('login-success', async () => {
+  console.log('🔐 LOGIN SUCCESS: Handler llamado');
+  
+  // PROTECCIÓN 1: Verificar si ya estamos procesando un login
+  if (isProcessingLogin) {
+    console.log('⚠️  BLOCKED: Ya estamos procesando un login, ignorando llamada');
+    return { success: false, message: 'Login already in progress' };
   }
-  createMainWindow();
+  
+  // PROTECCIÓN 2: Establecer flag de procesamiento
+  isProcessingLogin = true;
+  
+  try {
+    // PROTECCIÓN 3: Verificar si ya existe ventana principal
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      console.log('✅ MAIN WINDOW EXISTS: Mostrando ventana existente');
+      mainWindow.show();
+      mainWindow.focus();
+      
+      // Cerrar ventana de login
+      if (loginWindow && !loginWindow.isDestroyed()) {
+        loginWindow.close();
+      }
+      
+      isProcessingLogin = false;
+      return { success: true, message: 'Existing window shown' };
+    }
+    
+    // PROTECCIÓN 4: Verificar si ya estamos creando una ventana principal
+    if (isMainWindowCreating) {
+      console.log('⚠️  BLOCKED: Ya estamos creando ventana principal');
+      isProcessingLogin = false;
+      return { success: false, message: 'Main window creation in progress' };
+    }
+    
+    // PROTECCIÓN 5: Establecer flag de creación
+    isMainWindowCreating = true;
+    
+    // Cerrar ventana de login primero
+    if (loginWindow && !loginWindow.isDestroyed()) {
+      console.log('🚪 CLOSING: Cerrando ventana de login');
+      loginWindow.close();
+      loginWindow = null;
+    }
+    
+    // Esperar un poco para asegurar que la ventana se cierre
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Crear ventana principal
+    console.log('🏗️  CREATING: Nueva ventana principal');
+    createMainWindow();
+    
+    // Resetear flags después de crear la ventana
+    isMainWindowCreating = false;
+    isProcessingLogin = false;
+    
+    console.log('✅ SUCCESS: Ventana principal creada exitosamente');
+    return { success: true, message: 'New window created' };
+    
+  } catch (error) {
+    console.error('❌ ERROR en login-success:', error);
+    // Resetear flags en caso de error
+    isProcessingLogin = false;
+    isMainWindowCreating = false;
+    return { success: false, message: 'Error creating window', error: error.message };
+  }
 });
 
 ipcMain.handle('logout', () => {
+  // Resetear flags al hacer logout
+  isProcessingLogin = false;
+  isMainWindowCreating = false;
+  
   if (mainWindow) {
     mainWindow.close();
   }
   createLoginWindow();
+});
+
+// Handler para resetear flags en caso de emergencia
+ipcMain.handle('reset-login-flags', () => {
+  console.log('🔄 RESET: Reseteando flags de login');
+  isProcessingLogin = false;
+  isMainWindowCreating = false;
+  return { success: true, message: 'Flags reset' };
+});
+
+// Handler para verificar estado de ventanas
+ipcMain.handle('get-window-status', () => {
+  return {
+    hasMainWindow: mainWindow && !mainWindow.isDestroyed(),
+    hasLoginWindow: loginWindow && !loginWindow.isDestroyed(),
+    isProcessingLogin,
+    isMainWindowCreating,
+    totalWindows: BrowserWindow.getAllWindows().length
+  };
 });
 
 // Manejo de impresión

@@ -1,20 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   FileText, Plus, Search, Calendar, 
   User, Activity, Pill, AlertCircle,
-  Download, Upload, Edit, Eye
+  Download, Upload, Edit, Eye, ArrowLeft
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import medicalRecordService from '../../services/medicalRecordService';
 import toast from 'react-hot-toast';
 
-const MedicalRecordManager = ({ patientId }) => {
+const MedicalRecordManager = ({ patientId: propPatientId }) => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
   const queryClient = useQueryClient();
+
+  // Obtener patientId de props o URL params
+  const patientId = propPatientId || searchParams.get('patient');
+
+  useEffect(() => {
+    if (patientId) {
+      setSelectedPatientId(patientId);
+    }
+  }, [patientId]);
 
   // Obtener expediente médico
   const { data: medicalRecord, isLoading } = useQuery({
@@ -75,11 +88,23 @@ const MedicalRecordManager = ({ patientId }) => {
     <div className="bg-white/10 rounded-2xl border border-white/20 p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Expediente Médico</h2>
-          <p className="text-gray-400">
-            {medicalRecord?.patient?.name} - {medicalRecord?.patient?.medical_record_number}
-          </p>
+        <div className="flex items-center space-x-4">
+          {/* Botón de regreso si viene desde citas */}
+          {searchParams.get('patient') && (
+            <button
+              onClick={() => navigate('/appointments')}
+              className="p-2 text-gray-400 hover:text-white transition-colors"
+              title="Volver a citas"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+          )}
+          <div>
+            <h2 className="text-2xl font-bold text-white">Expediente Médico</h2>
+            <p className="text-gray-400">
+              {medicalRecord?.patient?.name} - {medicalRecord?.patient?.medical_record_number}
+            </p>
+          </div>
         </div>
         <div className="flex space-x-2">
           <button className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition flex items-center">

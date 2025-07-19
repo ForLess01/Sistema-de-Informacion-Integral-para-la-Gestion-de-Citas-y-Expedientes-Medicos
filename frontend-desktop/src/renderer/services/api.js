@@ -1,7 +1,9 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
+// Crear instancia de axios
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -9,7 +11,7 @@ const api = axios.create({
   },
 });
 
-// Interceptor para agregar el token
+// Interceptor para incluir el token en las peticiones
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
@@ -23,12 +25,14 @@ api.interceptors.request.use(
   }
 );
 
-// Interceptor para manejar errores
+// Interceptor para manejar respuestas y errores
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
-    
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
@@ -38,18 +42,42 @@ api.interceptors.response.use(
           refresh: refreshToken,
         });
         
-        localStorage.setItem('access_token', response.data.access);
-        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
+        const { access } = response.data;
+        localStorage.setItem('access_token', access);
         
+        originalRequest.headers.Authorization = `Bearer ${access}`;
         return api(originalRequest);
       } catch (refreshError) {
+        // Token refresh failed
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        localStorage.removeItem('user');
+        
+        // Solo logout si realmente estamos autenticados
+        // No ejecutar logout si el usuario nunca hizo login exitosamente
+        const isUserLoggedIn = localStorage.getItem('user');
+        if (window.electronAPI && isUserLoggedIn) {
+          console.log('🚪 LOGOUT: Token refresh failed, logging out user');
+          window.electronAPI.logout();
+        } else {
+          console.log('⚠️  TOKEN REFRESH FAILED: User was not logged in, skipping logout');
+        }
+        
         return Promise.reject(refreshError);
       }
     }
-    
+
+    // Mostrar mensajes de error
+    if (error.response?.data?.detail) {
+      toast.error(error.response.data.detail);
+    } else if (error.response?.data?.message) {
+      toast.error(error.response.data.message);
+    } else if (error.message === 'Network Error') {
+      toast.error('Error de conexión. Verifica tu conexión a internet.');
+    } else if (error.message) {
+      toast.error(error.message);
+    }
+
     return Promise.reject(error);
   }
 );

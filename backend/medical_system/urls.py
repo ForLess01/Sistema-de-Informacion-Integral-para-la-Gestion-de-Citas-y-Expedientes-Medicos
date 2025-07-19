@@ -21,6 +21,7 @@ def welcome_view(request):
             'admin_panel': '/admin/',
             'api_schema': '/api/schema/',
             'authentication': '/api/v1/auth/',
+            'dashboard': '/api/v1/dashboard/',
             'appointments': '/api/v1/appointments/',
             'medical_records': '/api/v1/medical-records/',
             'pharmacy': '/api/v1/pharmacy/',
@@ -40,6 +41,7 @@ urlpatterns = [
     
     # API v1
     path('api/v1/auth/', include('authentication.urls')),
+    path('api/v1/dashboard/', include('dashboard.urls')),
     path('api/v1/appointments/', include('appointments.urls')),
     path('api/v1/medical-records/', include('medical_records.urls')),
     path('api/v1/pharmacy/', include('pharmacy.urls')),
