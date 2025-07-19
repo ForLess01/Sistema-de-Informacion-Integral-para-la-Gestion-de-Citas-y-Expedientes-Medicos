@@ -85,6 +85,36 @@ const appointmentService = {
     const response = await api.get('/appointments/search/', { params: criteria });
     return response.data;
   },
+
+  // === RESERVAS TEMPORALES ===
+
+  // Crear reserva temporal
+  createTemporaryReservation: async (reservationData) => {
+    const response = await api.post('/appointments/create_temporary_reservation/', reservationData);
+    return response.data;
+  },
+
+  // Listar reservas temporales activas
+  getTemporaryReservations: async () => {
+    const response = await api.get('/appointments/list_temporary_reservations/');
+    return response.data;
+  },
+
+  // Cancelar reserva temporal
+  cancelTemporaryReservation: async (reservationId) => {
+    const response = await api.post('/appointments/cancel_temporary_reservation/', {
+      reservation_id: reservationId
+    });
+    return response.data;
+  },
+
+  // Confirmar reserva temporal (convertir a cita definitiva)
+  confirmTemporaryReservation: async (reservationId) => {
+    const response = await api.post('/appointments/confirm_temporary_reservation/', {
+      reservation_id: reservationId
+    });
+    return response.data;
+  },
 };
 
 export default appointmentService;

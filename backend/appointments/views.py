@@ -104,18 +104,38 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         # Filtrar por pk
         obj = get_object_or_404(queryset, pk=self.kwargs.get('pk'))
-# Verificar permisos del objeto
+        # Verificar permisos del objeto
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def create_temporary_reservation(self, request):
         """Crear una nueva reserva temporal"""
+        # Log para debugging
+        print(f"🔍 DEBUG - Datos recibidos: {request.data}")
+        print(f"🔍 DEBUG - Usuario: {request.user.id} - {request.user.get_full_name()}")
+        
         serializer = TemporaryReservationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        temporary_reservation = serializer.save(user=request.user)
-        return Response(
-            TemporaryReservationSerializer(temporary_reservation).data,
-            status=status.HTTP_201_CREATED
-        )
+        if not serializer.is_valid():
+            print(f"❌ ERROR - Errores de validación: {serializer.errors}")
+            return Response(
+                {'detail': 'Error de validación', 'errors': serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            temporary_reservation = serializer.save(user=request.user)
+            print(f"✅ SUCCESS - Reserva temporal creada: {temporary_reservation.id}")
+            return Response(
+                TemporaryReservationSerializer(temporary_reservation).data,
+                status=status.HTTP_201_CREATED
+            )
+        except Exception as e:
+            print(f"❌ ERROR - Excepción al crear reserva: {str(e)}")
+            return Response(
+                {'detail': f'Error al crear reserva temporal: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
  
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticatedOrReadOnly])
     def list_temporary_reservations(self, request):
@@ -129,6 +149,97 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             TemporaryReservationSerializer(reservations, many=True).data
         )
 
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def cancel_temporary_reservation(self, request):
+        """Cancelar una reserva temporal"""
+        reservation_id = request.data.get('reservation_id')
+        
+        if not reservation_id:
+            return Response(
+                {'error': 'Se requiere reservation_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            reservation = TemporaryReservation.objects.get(
+                id=reservation_id,
+                user=request.user,
+                is_active=True
+            )
+            
+            # Cancelar la reserva
+            reservation.is_active = False
+            reservation.save()
+            
+            return Response(
+                {'message': 'Reserva temporal cancelada exitosamente'},
+                status=status.HTTP_200_OK
+            )
+            
+        except TemporaryReservation.DoesNotExist:
+            return Response(
+                {'error': 'Reserva temporal no encontrada o no pertenece al usuario'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def confirm_temporary_reservation(self, request):
+        """Confirmar una reserva temporal convirtiéndola en cita definitiva"""
+        reservation_id = request.data.get('reservation_id')
+        
+        if not reservation_id:
+            return Response(
+                {'error': 'Se requiere reservation_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            reservation = TemporaryReservation.objects.get(
+                id=reservation_id,
+                user=request.user,
+                is_active=True
+            )
+            
+            # Verificar que la reserva no haya expirado
+            now = timezone.now()
+            if reservation.expires_at <= now:
+                return Response(
+                    {'error': 'La reserva temporal ha expirado'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Crear la cita definitiva
+            appointment = Appointment.objects.create(
+                patient=request.user,
+                doctor=reservation.doctor,
+                specialty=reservation.specialty,
+                appointment_date=reservation.appointment_date,
+                appointment_time=reservation.appointment_time,
+                status='scheduled',
+                notes=f'Confirmada desde reserva temporal #{reservation.id}'
+            )
+            
+            # Desactivar la reserva temporal
+            reservation.is_active = False
+            reservation.save()
+            
+            # Serializar la cita creada
+            serializer = AppointmentSerializer(appointment)
+            
+            return Response(
+                {
+                    'message': 'Reserva temporal confirmada exitosamente',
+                    'appointment': serializer.data
+                },
+                status=status.HTTP_201_CREATED
+            )
+            
+        except TemporaryReservation.DoesNotExist:
+            return Response(
+                {'error': 'Reserva temporal no encontrada o no pertenece al usuario'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
     def get_permissions(self):
         try:
             # Return permission_classes depending on `action`
@@ -136,8 +247,6 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         except KeyError:
             # Return default permission_classes if `action` is not set
             return [permission() for permission in self.permission_classes]
-        self.check_object_permissions(self.request, obj)
-        return obj
 
     @action(detail=False, methods=['get'])
     def upcoming(self, request):
@@ -216,8 +325,18 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 status__in=['scheduled', 'confirmed']
             ).values_list('appointment_time', flat=True)
             
+            # Verificar reservas temporales activas para este doctor en esta fecha
+            now = timezone.now()
+            temporary_reservations = TemporaryReservation.objects.filter(
+                doctor_id=doctor_id,
+                appointment_date=selected_date,
+                is_active=True,
+                expires_at__gt=now
+            ).values_list('appointment_time', flat=True)
+            
             # Convertir a formato string para comparación
             occupied_slots = [time.strftime('%H:%M') for time in existing_appointments]
+            occupied_slots.extend([time.strftime('%H:%M') for time in temporary_reservations])
             
             # Para fines de semana, simular menos disponibilidad
             if weekday >= 5:  # Fin de semana (sábado y domingo)
@@ -298,11 +417,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             
             # Si no hay doctores en la base de datos, usar datos de fallback
             if not doctors_list:
-                fallback_doctors = self._get_fallback_doctors_by_specialty(specialty_id)
-                if fallback_doctors:
-                    return Response(fallback_doctors)
-                else:
-                    return Response([])
+                return Response([])
             
             return Response(doctors_list)
             
@@ -312,9 +427,9 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            # En caso de error, usar datos de fallback
-            fallback_doctors = self._get_fallback_doctors_by_specialty(specialty_id)
-            return Response(fallback_doctors if fallback_doctors else [])
+            # En caso de error, retornar lista vacía
+            print(f"❌ ERROR en doctors_by_specialty: {str(e)}")
+            return Response([])
     
     def _get_fallback_doctors_by_specialty(self, specialty_id):
         """Datos de fallback para doctores cuando no hay datos en la BD"""

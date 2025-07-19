@@ -225,6 +225,15 @@ class TemporaryReservation(models.Model):
         from django.utils import timezone
         return timezone.now() > self.expires_at
     
+    def save(self, *args, **kwargs):
+        """Override save para establecer expires_at automáticamente"""
+        if not self.expires_at:
+            from django.utils import timezone
+            from datetime import timedelta
+            # Establecer expiración en 10 minutos desde ahora
+            self.expires_at = timezone.now() + timedelta(minutes=10)
+        super().save(*args, **kwargs)
+    
     def cancel_reservation(self):
         """Cancela la reserva temporal"""
         self.is_active = False

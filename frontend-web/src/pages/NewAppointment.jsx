@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, User, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -15,7 +15,11 @@ const NewAppointment = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
-  const [reason, setReason] = useState('');
+const [reason, setReason] = useState('');
+const [temporaryReservation, setTemporaryReservation] = useState(null);
+const [timer, setTimer] = useState(0);
+const [timerInterval, setTimerInterval] = useState(null);
+const [processStarted, setProcessStarted] = useState(false);
 
   // Obtener especialidades
   const { data: specialties, isLoading: loadingSpecialties } = useQuery({
@@ -30,6 +34,114 @@ const NewAppointment = () => {
     enabled: !!selectedSpecialty,
   });
 
+// Función para iniciar el temporizador principal
+  const startMainTimer = () => {
+    if (!processStarted) {
+      setProcessStarted(true);
+      setTimer(300); // 5 minutos para completar todo el proceso
+      
+      // Limpiar intervalo previo si existe
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+      
+      // Iniciar temporizador
+      const interval = setInterval(() => {
+        setTimer(prevTime => {
+          if (prevTime <= 1) {
+            clearInterval(interval);
+            // Limpiar todo el estado y regresar al inicio
+            resetAppointmentProcess();
+            toast.error('Tiempo agotado. Por favor inicie el proceso nuevamente.');
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+      setTimerInterval(interval);
+      toast.success('¡Proceso iniciado! Tiene 5 minutos para completar su reserva');
+    }
+  };
+
+// Función para resetear el proceso
+  const resetAppointmentProcess = () => {
+    setStep(1);
+    setSelectedSpecialty(null);
+    setSelectedDoctor(null);
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setReason('');
+    setTemporaryReservation(null);
+    setTimer(0);
+    setProcessStarted(false);
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
+  };
+
+// Mutation para crear reserva temporal
+  const createTemporaryMutation = useMutation({
+    mutationFn: appointmentService.createTemporaryReservation,
+    onSuccess: (data) => {
+      setTemporaryReservation(data);
+      toast.success('Slot reservado temporalmente');
+    },
+    onError: (error) => {
+      console.error('❌ Error al crear reserva temporal:', error);
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.error || 
+                          'Error al reservar el slot temporalmente';
+      toast.error(errorMessage);
+    },
+  });
+
+  // Cancelar reserva temporal
+  const cancelTemporaryReservation = () => {
+    if (temporaryReservation) {
+      appointmentService.cancelTemporaryReservation(temporaryReservation.id)
+        .then(() => {
+          setTemporaryReservation(null);
+          setTimer(0);
+          toast('Reserva temporal cancelada');
+        }).catch(() => {
+          toast.error('Error al cancelar la reserva temporal');
+        });
+    }
+  };
+
+  // Manejar selección de slot
+  const handleSlotSelection = (slot) => {
+    if (selectedTime === slot) {
+      setSelectedTime(null);
+      cancelTemporaryReservation();
+    } else {
+      setSelectedTime(slot);
+      // Enviar datos en el formato correcto que espera el backend
+      createTemporaryMutation.mutate({
+        doctor: selectedDoctor.id,
+        specialty: selectedSpecialty.id,
+        appointment_date: format(selectedDate, 'yyyy-MM-dd'),
+        appointment_time: slot + ':00',
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (timer > 0) {
+      const countdown = setInterval(() => {
+        setTimer(t => {
+          if (t <= 1) {
+            cancelTemporaryReservation();
+            return 0;
+          }
+          return t - 1;
+        })
+      }, 1000);
+      return () => clearInterval(countdown);
+    }
+  }, [timer]);
+
   // Obtener horarios disponibles
   const { data: availableSlots, isLoading: loadingSlots } = useQuery({
     queryKey: ['availableSlots', selectedDoctor?.id, selectedDate],
@@ -41,6 +153,10 @@ const NewAppointment = () => {
   const createMutation = useMutation({
     mutationFn: appointmentService.createAppointment,
     onSuccess: () => {
+      // Limpiar temporizador al completar exitosamente
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
       toast.success('Cita agendada exitosamente');
       navigate('/appointments');
     },
@@ -104,6 +220,7 @@ const NewAppointment = () => {
                   <button
                     key={specialty.id}
                     onClick={() => {
+                      startMainTimer(); // Iniciar temporizador al comenzar el proceso
                       setSelectedSpecialty(specialty);
                       setStep(2);
                     }}
@@ -232,7 +349,7 @@ const NewAppointment = () => {
                     {availableSlots?.map((slot) => (
                       <button
                         key={slot}
-                        onClick={() => setSelectedTime(slot)}
+onClick={() => handleSlotSelection(slot)}
                         className={`py-2 px-3 rounded-lg text-sm transition-all ${
                           selectedTime === slot
                             ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
@@ -267,8 +384,30 @@ const NewAppointment = () => {
         );
 
       default:
-        return null;
+return null;
     }
+  };
+
+  // Mostrar temporizador de expiración
+  const renderTimer = () => {
+    if (timer > 0) {
+      const minutes = Math.floor(timer / 60);
+      const seconds = timer % 60;
+      return (
+        <div className="mb-6 p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl text-center">
+          <div className="flex items-center justify-center space-x-2 text-white">
+            <Clock className="h-5 w-5 text-yellow-400" />
+            <span className="font-semibold">
+              Tiempo restante: {`${minutes}:${seconds.toString().padStart(2, '0')}`}
+            </span>
+          </div>
+          <p className="text-yellow-200 text-sm mt-1">
+            Complete su reserva antes de que expire el tiempo
+          </p>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
@@ -301,6 +440,9 @@ const NewAppointment = () => {
           </div>
         </div>
 
+        {/* Temporizador */}
+        {processStarted && renderTimer()}
+
         {/* Content */}
         <div className="backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20">
           {renderStep()}
@@ -329,7 +471,7 @@ const NewAppointment = () => {
                   </>
                 ) : (
                   <>
-                    <span>Agendar Cita</span>
+<span>Confirmar Reserva</span>
                     <ChevronRight className="h-4 w-4" />
                   </>
                 )}

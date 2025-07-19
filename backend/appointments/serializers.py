@@ -186,12 +186,48 @@ class TemporaryReservationSerializer(serializers.ModelSerializer):
     time_remaining = serializers.SerializerMethodField()
     is_expired = serializers.SerializerMethodField()
     
+    def validate(self, data):
+        """Validaciones personalizadas"""
+        print(f"🔍 SERIALIZER DEBUG - Datos a validar: {data}")
+        
+        # Verificar que el doctor existe
+        if 'doctor' in data:
+            # Si ya es un objeto User, obtener su ID
+            if isinstance(data['doctor'], User):
+                doctor = data['doctor']
+                print(f"✅ Doctor ya es objeto: {doctor.get_full_name()} (ID: {doctor.id})")
+            else:
+                # Si es un ID, buscar el objeto
+                try:
+                    doctor = User.objects.get(id=data['doctor'])
+                    print(f"✅ Doctor encontrado: {doctor.get_full_name()} (ID: {doctor.id})")
+                except User.DoesNotExist:
+                    print(f"❌ Doctor no encontrado: {data['doctor']}")
+                    raise serializers.ValidationError({"doctor": "Doctor no encontrado"})
+        
+        # Verificar que la especialidad existe
+        if 'specialty' in data:
+            # Si ya es un objeto Specialty, obtener su ID
+            if isinstance(data['specialty'], Specialty):
+                specialty = data['specialty']
+                print(f"✅ Especialidad ya es objeto: {specialty.name} (ID: {specialty.id})")
+            else:
+                # Si es un ID, buscar el objeto
+                try:
+                    specialty = Specialty.objects.get(id=data['specialty'])
+                    print(f"✅ Especialidad encontrada: {specialty.name} (ID: {specialty.id})")
+                except Specialty.DoesNotExist:
+                    print(f"❌ Especialidad no encontrada: {data['specialty']}")
+                    raise serializers.ValidationError({"specialty": "Especialidad no encontrada"})
+        
+        return data
+    
     class Meta:
         model = TemporaryReservation
         fields = ['id', 'user', 'user_name', 'doctor', 'doctor_name', 'specialty', 
                  'specialty_name', 'appointment_date', 'appointment_time', 'expires_at',
                  'time_remaining', 'is_expired', 'is_active', 'created_at']
-        read_only_fields = ['created_at']
+        read_only_fields = ['created_at', 'user', 'expires_at', 'user_name']
     
     def get_time_remaining(self, obj):
         """Calcula el tiempo restante en segundos"""
