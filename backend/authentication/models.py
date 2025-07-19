@@ -13,6 +13,10 @@ class UserManager(BaseUserManager):
             raise ValueError('El email es obligatorio')
         
         email = self.normalize_email(email)
+        # Si no se proporciona username, usar la parte antes del @ del email
+        if 'username' not in extra_fields:
+            extra_fields['username'] = email.split('@')[0]
+        
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -51,6 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     # Campos básicos
     user_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -59,18 +64,43 @@ class User(AbstractBaseUser, PermissionsMixin):
     dni = models.CharField(
         max_length=20,
         unique=True,
-        validators=[RegexValidator(r'^[0-9]+$', 'Solo se permiten números')]
+        null=True,
+        blank=True,
+        validators=[RegexValidator(r'^[0-9]+$', 'Solo se permiten números')],
+        verbose_name='DNI'
     )
-    birth_date = models.DateField(null=True, blank=True)
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
+    identification_number = models.CharField(
+        max_length=20,
+        unique=True,
+        null=True,
+        blank=True,
+        validators=[RegexValidator(r'^[0-9]+$', 'Solo se permiten números')],
+        verbose_name='Número de identificación'
+    )
+    birth_date = models.DateField(null=True, blank=True, verbose_name='Fecha de nacimiento')
+    date_of_birth = models.DateField(null=True, blank=True, verbose_name='Fecha de nacimiento')
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, verbose_name='Género')
     phone = models.CharField(
         max_length=20,
-        validators=[RegexValidator(r'^[+]?[0-9]+$', 'Ingrese un número válido')]
+        validators=[RegexValidator(r'^[+]?[0-9]+$', 'Ingrese un número válido')],
+        verbose_name='Teléfono'
     )
     emergency_phone = models.CharField(
         max_length=20,
         blank=True,
-        validators=[RegexValidator(r'^[+]?[0-9]+$', 'Ingrese un número válido')]
+        validators=[RegexValidator(r'^[+]?[0-9]+$', 'Ingrese un número válido')],
+        verbose_name='Teléfono de emergencia'
+    )
+    emergency_contact_name = models.CharField(
+        max_length=100, 
+        blank=True,
+        verbose_name='Nombre de contacto de emergencia'
+    )
+    emergency_contact_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        validators=[RegexValidator(r'^[+]?[0-9]+$', 'Ingrese un número válido')],
+        verbose_name='Teléfono de contacto de emergencia'
     )
     
     # Dirección
@@ -93,6 +123,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         null=True
     )
     
+    # 2FA Fields
+    two_factor_enabled = models.BooleanField(default=False, verbose_name='2FA Habilitado')
+    two_factor_secret = models.CharField(max_length=32, blank=True, verbose_name='Secreto 2FA')
+    backup_tokens = models.JSONField(default=list, blank=True, verbose_name='Tokens de respaldo')
+    
     # Manager
     objects = UserManager()
     
@@ -112,6 +147,37 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     def __str__(self):
         return self.get_full_name()
+    
+    @property
+    def age(self):
+        """Calcula la edad del usuario basado en su fecha de nacimiento"""
+        if not self.date_of_birth and not self.birth_date:
+            return None
+        
+        dob = self.date_of_birth or self.birth_date
+        from datetime import datetime
+        today = datetime.now().date()
+        age = today.year - dob.year
+        
+        # Verificar si ya pasó el cumpleaños este año
+        if today.month < dob.month or (today.month == dob.month and today.day < dob.day):
+            age -= 1
+            
+        return age
+    
+    def delete(self, *args, **kwargs):
+        """Implementa borrado suave marcando como inactivo en lugar de eliminar"""
+        # Verificar si es borrado permanente
+        permanent = kwargs.pop('permanent', False)
+        
+        if permanent:
+            # Borrado real en la base de datos
+            return super().delete(*args, **kwargs)
+        else:
+            # Borrado suave - solo marcar como inactivo
+            self.is_active = False
+            self.save()
+            return (1, {'authentication.User': 1})
 
 
 class DoctorProfile(models.Model):

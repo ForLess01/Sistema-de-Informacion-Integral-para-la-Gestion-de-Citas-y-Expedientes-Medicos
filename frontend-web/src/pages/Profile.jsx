@@ -6,11 +6,21 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import TwoFactorModal from '../components/auth/TwoFactorModal';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, enable2FA, confirm2FA, disable2FA, regenerateBackupTokens } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('personal');
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [qrCode, setQrCode] = useState(null);
+  const [backupTokens, setBackupTokens] = useState([]);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isConfirming2FA, setIsConfirming2FA] = useState(false);
+  const [showBackupTokens, setShowBackupTokens] = useState(false);
+  const [disablePassword, setDisablePassword] = useState('');
+  const [isDisabling2FA, setIsDisabling2FA] = useState(false);
+  
   const [formData, setFormData] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
@@ -83,6 +93,82 @@ const Profile = () => {
       });
     } catch (error) {
       toast.error('Error al cambiar la contraseña');
+    }
+  };
+
+  const handleEnable2FA = async () => {
+    try {
+      const result = await enable2FA();
+      if (result.success) {
+        setQrCode(result.data.qr_code);
+        setBackupTokens(result.data.backup_tokens || []);
+        setShow2FAModal(true);
+      } else {
+        toast.error(result.error || 'Error al habilitar 2FA');
+      }
+    } catch (error) {
+      toast.error('Error al habilitar 2FA');
+    }
+  };
+
+  const handleConfirm2FA = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      toast.error('Por favor ingresa un código válido de 6 dígitos');
+      return;
+    }
+
+    setIsConfirming2FA(true);
+    try {
+      const result = await confirm2FA(verificationCode);
+      if (result.success) {
+        toast.success('2FA habilitado exitosamente');
+        setShow2FAModal(false);
+        setVerificationCode('');
+        setShowBackupTokens(true);
+      } else {
+        toast.error(result.error || 'Código incorrecto');
+      }
+    } catch (error) {
+      toast.error('Error al confirmar 2FA');
+    } finally {
+      setIsConfirming2FA(false);
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (!disablePassword) {
+      toast.error('Por favor ingresa tu contraseña');
+      return;
+    }
+
+    setIsDisabling2FA(true);
+    try {
+      const result = await disable2FA(disablePassword);
+      if (result.success) {
+        toast.success('2FA deshabilitado exitosamente');
+        setDisablePassword('');
+      } else {
+        toast.error(result.error || 'Error al deshabilitar 2FA');
+      }
+    } catch (error) {
+      toast.error('Error al deshabilitar 2FA');
+    } finally {
+      setIsDisabling2FA(false);
+    }
+  };
+
+  const handleRegenerateBackupTokens = async () => {
+    try {
+      const result = await regenerateBackupTokens();
+      if (result.success) {
+        setBackupTokens(result.data.backup_tokens || []);
+        setShowBackupTokens(true);
+        toast.success('Tokens de respaldo regenerados');
+      } else {
+        toast.error(result.error || 'Error al regenerar tokens');
+      }
+    } catch (error) {
+      toast.error('Error al regenerar tokens de respaldo');
     }
   };
 
@@ -376,17 +462,107 @@ const Profile = () => {
                     </div>
 
                     <div className="border-t border-white/10 pt-6 mt-6">
-                      <div className="flex items-center space-x-3 text-yellow-400 mb-4">
-                        <Shield className="h-5 w-5" />
-                        <h4 className="font-medium">Autenticación de Dos Factores</h4>
+                      <div className="flex items-center space-x-3 mb-4">
+                        <Shield className={`h-5 w-5 ${user?.two_factor_enabled ? 'text-green-400' : 'text-yellow-400'}`} />
+                        <h4 className="font-medium text-white">Autenticación de Dos Factores</h4>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          user?.two_factor_enabled 
+                            ? 'bg-green-500/20 text-green-300' 
+                            : 'bg-red-500/20 text-red-300'
+                        }`}>
+                          {user?.two_factor_enabled ? 'Habilitado' : 'Deshabilitado'}
+                        </span>
                       </div>
                       <p className="text-gray-300 mb-4">
                         Añade una capa extra de seguridad a tu cuenta habilitando la autenticación de dos factores.
                       </p>
-                      <button className="px-4 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors">
-                        Configurar 2FA
-                      </button>
+                      
+                      {!user?.two_factor_enabled ? (
+                        /* Usuario NO tiene 2FA habilitado */
+                        <div className="space-y-4">
+                          <button
+                            onClick={handleEnable2FA}
+                            className="px-4 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors"
+                          >
+                            ✨ Habilitar 2FA
+                          </button>
+                        </div>
+                      ) : (
+                        /* Usuario SI tiene 2FA habilitado */
+                        <div className="space-y-4">
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              onClick={handleRegenerateBackupTokens}
+                              className="px-4 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors"
+                            >
+                              🔄 Regenerar Tokens de Respaldo
+                            </button>
+                          </div>
+                          
+                          {/* Sección para deshabilitar 2FA */}
+                          <div className="border-t border-white/10 pt-4 mt-4">
+                            <h5 className="text-white font-medium mb-2">⚠️ Deshabilitar 2FA</h5>
+                            <p className="text-gray-400 text-sm mb-3">
+                              Ingresa tu contraseña actual para deshabilitar la autenticación de dos factores.
+                            </p>
+                            <div className="flex gap-3">
+                              <input
+                                type="password"
+                                value={disablePassword}
+                                onChange={(e) => setDisablePassword(e.target.value)}
+                                placeholder="Contraseña actual"
+                                className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-400"
+                              />
+                              <button
+                                onClick={handleDisable2FA}
+                                disabled={isDisabling2FA || !disablePassword}
+                                className="px-4 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {isDisabling2FA ? 'Deshabilitando...' : 'Deshabilitar'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
+                    
+                    {/* Modal para mostrar tokens de respaldo */}
+                    {showBackupTokens && backupTokens.length > 0 && (
+                      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4">
+                          <h3 className="text-lg font-bold text-white mb-4">🔐 Tokens de Respaldo</h3>
+                          <p className="text-gray-300 text-sm mb-4">
+                            Guarda estos tokens de respaldo en un lugar seguro. Puedes usarlos para acceder a tu cuenta si pierdes tu dispositivo de autenticación.
+                          </p>
+                          <div className="bg-gray-900 rounded-lg p-4 mb-4 max-h-60 overflow-y-auto">
+                            <div className="grid grid-cols-2 gap-2">
+                              {backupTokens.map((token, index) => (
+                                <code key={index} className="text-green-300 text-sm font-mono block">
+                                  {token}
+                                </code>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(backupTokens.join('\n'));
+                                toast.success('Tokens copiados al portapapeles');
+                              }}
+                              className="flex-1 px-4 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors"
+                            >
+                              Copiar Tokens
+                            </button>
+                            <button
+                              onClick={() => setShowBackupTokens(false)}
+                              className="flex-1 px-4 py-2 bg-gray-500/20 text-gray-300 rounded-lg hover:bg-gray-500/30 transition-colors"
+                            >
+                              Cerrar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 )}
 
@@ -487,6 +663,20 @@ const Profile = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Modal de 2FA */}
+      <TwoFactorModal
+        isOpen={show2FAModal}
+        qrCode={qrCode}
+        onClose={() => {
+          setShow2FAModal(false);
+          setVerificationCode('');
+        }}
+        onConfirm={handleConfirm2FA}
+        verificationCode={verificationCode}
+        setVerificationCode={setVerificationCode}
+        isConfirming={isConfirming2FA}
+      />
     </div>
   );
 };

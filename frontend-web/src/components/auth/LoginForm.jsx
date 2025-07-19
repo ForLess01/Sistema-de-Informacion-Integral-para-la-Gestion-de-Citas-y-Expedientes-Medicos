@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -6,6 +6,7 @@ import * as yup from 'yup';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, Mail, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import TwoFactorForm from './TwoFactorForm';
 
 const schema = yup.object({
   email: yup.string().email('Email inválido').required('Email es requerido'),
@@ -16,28 +17,78 @@ const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, twoFactorRequired, resetTwoFactor, user } = useAuth();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     setError,
+    clearErrors,
   } = useForm({
     resolver: yupResolver(schema),
   });
 
+  // Redireccionar cuando el usuario se autentique exitosamente
+  useEffect(() => {
+    console.log('🔄 LoginForm useEffect - usuario:', user);
+    if (user) {
+      console.log('🚀 Redirigiendo a dashboard...');
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
   const onSubmit = async (data) => {
+    console.log('📝 LoginForm onSubmit - datos:', data);
     setIsLoading(true);
+    clearErrors(); // Limpiar errores previos
+    
     const result = await login(data);
+    console.log('📝 LoginForm onSubmit - resultado:', result);
     
     if (result.success) {
+      console.log('✅ Login exitoso en LoginForm');
+      // Redireccionar directamente sin esperar al useEffect
+      console.log('🚀 Redirigiendo directamente a dashboard...');
       navigate('/dashboard');
+    } else if (result.requires2FA) {
+      console.log('🔑 Se requiere 2FA en LoginForm');
+      // No mostrar error, solo indicar que se requiere 2FA
+      // El componente TwoFactorForm se mostrará automáticamente
     } else {
+      console.log('❌ Error en LoginForm:', result.error);
       setError('root', { message: result.error });
     }
+    
     setIsLoading(false);
   };
+
+  const handleBackToLogin = () => {
+    resetTwoFactor();
+    clearErrors();
+  };
+
+  // Si se requiere 2FA, mostrar el componente TwoFactorForm
+  if (twoFactorRequired) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <TwoFactorForm />
+        <div className="mt-4 text-center">
+          <button
+            onClick={handleBackToLogin}
+            className="text-sm text-blue-300 hover:text-blue-200 transition-colors"
+          >
+            ← Volver al login
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

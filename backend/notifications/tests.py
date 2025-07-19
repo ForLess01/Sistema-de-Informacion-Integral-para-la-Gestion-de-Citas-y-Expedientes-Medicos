@@ -22,9 +22,7 @@ class NotificationModelTests(TestCase):
     
     def setUp(self):
         """Configuración inicial para los tests"""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
+        self.user = User.objects.create_user(email='test@example.com',
             first_name='Test',
             last_name='User',
             role='patient'
@@ -155,9 +153,7 @@ class NotificationServiceTests(TestCase):
     
     def setUp(self):
         """Configuración inicial"""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
+        self.user = User.objects.create_user(email='test@example.com',
             first_name='Test',
             last_name='User',
             role='patient'
@@ -238,9 +234,7 @@ class NotificationServiceTests(TestCase):
     def test_create_appointment_reminder(self):
         """Test para crear recordatorio de cita"""
         # Crear datos necesarios
-        doctor = User.objects.create_user(
-            username='doctor',
-            email='doctor@example.com',
+        doctor = User.objects.create_user(email='doctor@example.com',
             role='doctor'
         )
         
@@ -270,9 +264,7 @@ class EmailServiceTests(TestCase):
     
     def setUp(self):
         """Configuración inicial"""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
+        self.user = User.objects.create_user(email='test@example.com',
             role='patient'
         )
         
@@ -326,9 +318,7 @@ class SMSServiceTests(TestCase):
     
     def setUp(self):
         """Configuración inicial"""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
+        self.user = User.objects.create_user(email='test@example.com',
             role='patient'
         )
         
@@ -376,9 +366,7 @@ class PushServiceTests(TestCase):
     
     def setUp(self):
         """Configuración inicial"""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
+        self.user = User.objects.create_user(email='test@example.com',
             role='patient'
         )
         
@@ -437,24 +425,18 @@ class NotificationSignalTests(TestCase):
     
     def setUp(self):
         """Configuración inicial"""
-        self.patient = User.objects.create_user(
-            username='patient',
-            email='patient@example.com',
+        self.patient = User.objects.create_user(email='patient@example.com',
             role='patient'
         )
         
-        self.doctor = User.objects.create_user(
-            username='doctor',
-            email='doctor@example.com',
+        self.doctor = User.objects.create_user(email='doctor@example.com',
             role='doctor'
         )
     
     def test_create_notification_preferences_signal(self):
         """Test para creación automática de preferencias"""
         # Las preferencias deben crearse automáticamente al crear un usuario
-        new_user = User.objects.create_user(
-            username='newuser',
-            email='new@example.com',
+        new_user = User.objects.create_user(email='new@example.com',
             role='patient'
         )
         
@@ -470,15 +452,11 @@ class NotificationAPITests(TestCase):
     
     def setUp(self):
         """Configuración inicial"""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
+        self.user = User.objects.create_user(email='test@example.com',
             role='patient'
         )
         
-        self.admin_user = User.objects.create_user(
-            username='admin',
-            email='admin@example.com',
+        self.admin_user = User.objects.create_user(email='admin@example.com',
             role='admin'
         )
         
@@ -556,9 +534,7 @@ class NotificationCacheTests(TestCase):
     
     def setUp(self):
         """Configuración inicial"""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
+        self.user = User.objects.create_user(email='test@example.com',
             role='patient'
         )
     

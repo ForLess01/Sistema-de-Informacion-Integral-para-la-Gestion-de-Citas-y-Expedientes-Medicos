@@ -2,10 +2,103 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
 import uuid
 import json
+import os
 
 User = get_user_model()
+
+
+class Report(models.Model):
+    """Modelo base para reportes del sistema"""
+    REPORT_TYPES = [
+        ('appointments', 'Reporte de Citas'),
+        ('patients', 'Reporte de Pacientes'),
+        ('medications', 'Reporte de Medicamentos'),
+        ('financial', 'Reporte Financiero'),
+        ('emergency', 'Reporte de Emergencias'),
+        ('occupancy', 'Reporte de Ocupación'),
+        ('lab_tests', 'Reporte de Exámenes'),
+        ('custom', 'Reporte Personalizado'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pendiente'),
+        ('processing', 'Procesando'),
+        ('completed', 'Completado'),
+        ('failed', 'Fallido'),
+    ]
+    
+    FORMATS = [
+        ('pdf', 'PDF'),
+        ('excel', 'Excel'),
+        ('csv', 'CSV'),
+        ('json', 'JSON'),
+    ]
+    
+    name = models.CharField(max_length=200)
+    report_type = models.CharField(max_length=50, choices=REPORT_TYPES)
+    generated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='reports_generated'
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    format = models.CharField(max_length=10, choices=FORMATS, default='pdf')
+    parameters = models.JSONField(
+        default=dict,
+        help_text="Parámetros utilizados para generar el reporte"
+    )
+    data = models.JSONField(
+        default=dict,
+        null=True,
+        blank=True,
+        help_text="Datos del reporte (para reportes JSON)"
+    )
+    file_url = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text="URL al archivo del reporte"
+    )
+    file_size = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Tamaño del archivo en bytes"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Reporte'
+        verbose_name_plural = 'Reportes'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.name} - {self.created_at.strftime('%Y-%m-%d')}"
+    
+    def clean(self):
+        """Validación de datos del reporte"""
+        if self.report_type not in [choice[0] for choice in self.REPORT_TYPES]:
+            raise ValidationError({'report_type': 'Tipo de reporte inválido'})
+        
+        if self.format not in [choice[0] for choice in self.FORMATS]:
+            raise ValidationError({'format': 'Formato de reporte inválido'})
+    
+    @property
+    def file_size_display(self):
+        """Muestra el tamaño del archivo en un formato legible"""
+        if not self.file_size:
+            return '0 bytes'
+            
+        # Convertir a KB, MB, etc
+        for unit in ['bytes', 'KB', 'MB', 'GB']:
+            if self.file_size < 1024.0 or unit == 'GB':
+                break
+            self.file_size /= 1024.0
+        return f"{self.file_size:.1f} {unit}"
 
 
 class ReportTemplate(models.Model):

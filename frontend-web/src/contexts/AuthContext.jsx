@@ -15,6 +15,8 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
+  const [twoFactorEmail, setTwoFactorEmail] = useState(null);
 
   useEffect(() => {
     // Cargar usuario al iniciar
@@ -28,11 +30,31 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
+      console.log('🔐 Iniciando login...', credentials.email);
       const data = await authService.login(credentials);
+      console.log('📝 Respuesta del backend:', data);
+      
+      // Verificar si requiere 2FA
+      if (data.requires_2fa) {
+        console.log('🔑 Se requiere 2FA');
+        setTwoFactorRequired(true);
+        setTwoFactorEmail(credentials.email);
+        return { 
+          success: false, 
+          requires2FA: true, 
+          message: data.message || 'Se requiere autenticación de dos factores' 
+        };
+      }
+      
+      // Login exitoso sin 2FA
+      console.log('✅ Login exitoso sin 2FA, usuario:', data.user);
       setUser(data.user);
+      setTwoFactorRequired(false);
+      setTwoFactorEmail(null);
       toast.success('¡Bienvenido!');
       return { success: true };
     } catch (error) {
+      console.error('❌ Error en login:', error);
       return { 
         success: false, 
         error: error.response?.data?.detail || 'Error al iniciar sesión' 
@@ -102,6 +124,100 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Métodos de 2FA
+  const verify2FA = async (token) => {
+    try {
+      console.log('🔐 AuthContext verify2FA - enviando:', { email: twoFactorEmail, token });
+      const data = await authService.verify2FA(twoFactorEmail, token);
+      console.log('📋 AuthContext verify2FA - respuesta:', data);
+      
+      // Guardar tokens y usuario tras verificación exitosa
+      const { access, refresh, user } = data;
+      console.log('💾 Guardando tokens y usuario:', { hasAccess: !!access, hasRefresh: !!refresh, user });
+      
+      localStorage.setItem('access_token', access);
+      localStorage.setItem('refresh_token', refresh);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      setUser(user);
+      setTwoFactorRequired(false);
+      setTwoFactorEmail(null);
+      console.log('✅ AuthContext - estado actualizado, usuario establecido');
+      toast.success('¡Bienvenido!');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ AuthContext verify2FA error:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Código inválido o expirado' 
+      };
+    }
+  };
+
+  const enable2FA = async () => {
+    try {
+      const data = await authService.enable2FA();
+      return { success: true, data };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Error al habilitar 2FA' 
+      };
+    }
+  };
+
+  const confirm2FA = async (token) => {
+    try {
+      const data = await authService.confirm2FA(token);
+      // Actualizar usuario local para reflejar que 2FA está habilitado
+      const updatedUser = { ...user, two_factor_enabled: true };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      toast.success('Autenticación de dos factores habilitada exitosamente');
+      return { success: true, data };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Error al confirmar 2FA' 
+      };
+    }
+  };
+
+  const disable2FA = async (password) => {
+    try {
+      await authService.disable2FA(password);
+      // Actualizar usuario local para reflejar que 2FA está deshabilitado
+      const updatedUser = { ...user, two_factor_enabled: false };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      toast.success('Autenticación de dos factores deshabilitada');
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Error al deshabilitar 2FA' 
+      };
+    }
+  };
+
+  const regenerateBackupTokens = async () => {
+    try {
+      const data = await authService.regenerateBackupTokens();
+      toast.success('Tokens de respaldo regenerados');
+      return { success: true, data };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Error al regenerar tokens' 
+      };
+    }
+  };
+
+  const resetTwoFactor = () => {
+    setTwoFactorRequired(false);
+    setTwoFactorEmail(null);
+  };
+
   const value = {
     user,
     loading,
@@ -111,6 +227,16 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     changePassword,
     isAuthenticated: !!user,
+    // 2FA properties
+    twoFactorRequired,
+    twoFactorEmail,
+    // 2FA methods
+    verify2FA,
+    enable2FA,
+    confirm2FA,
+    disable2FA,
+    regenerateBackupTokens,
+    resetTwoFactor,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

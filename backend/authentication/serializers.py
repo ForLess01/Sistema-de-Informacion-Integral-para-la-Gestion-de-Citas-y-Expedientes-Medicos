@@ -7,14 +7,15 @@ from .models import User, DoctorProfile, PatientProfile
 class UserSerializer(serializers.ModelSerializer):
     """Serializer básico para usuarios"""
     full_name = serializers.CharField(source='get_full_name', read_only=True)
+    username = serializers.EmailField(source='email', read_only=True)
     
     class Meta:
         model = User
         fields = [
-            'id', 'user_id', 'email', 'first_name', 'last_name', 'full_name',
+            'id', 'user_id', 'email', 'username', 'first_name', 'last_name', 'full_name',
             'dni', 'birth_date', 'gender', 'phone', 'emergency_phone',
             'address', 'city', 'state', 'postal_code', 'role',
-            'is_active', 'date_joined', 'profile_picture'
+            'is_active', 'date_joined', 'profile_picture', 'two_factor_enabled'
         ]
         read_only_fields = ['user_id', 'date_joined']
         extra_kwargs = {
@@ -93,6 +94,25 @@ class LoginSerializer(serializers.Serializer):
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Serializer personalizado para JWT"""
+    
+    def validate(self, attrs):
+        # Primero validar las credenciales
+        data = super().validate(attrs)
+        
+        # Obtener el usuario autenticado
+        user = self.user
+        
+        # Agregar información sobre 2FA
+        data['two_factor_enabled'] = user.two_factor_enabled
+        data['requires_2fa'] = user.two_factor_enabled
+        
+        # Si el usuario tiene 2FA habilitado, no devolver los tokens aún
+        if user.two_factor_enabled:
+            data.pop('refresh', None)
+            data.pop('access', None)
+            data['message'] = 'Se requiere código de autenticación de dos factores'
+        
+        return data
     
     @classmethod
     def get_token(cls, user):

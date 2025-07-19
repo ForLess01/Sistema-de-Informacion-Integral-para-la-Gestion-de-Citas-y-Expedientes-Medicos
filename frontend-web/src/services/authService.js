@@ -4,13 +4,25 @@ const authService = {
   // Login de usuario
   login: async (credentials) => {
     const response = await api.post('/auth/login/', credentials);
-    const { access, refresh, user } = response.data;
+    const data = response.data;
     
+    // Verificar si requiere 2FA
+    if (data.requires_2fa) {
+      // No guardar tokens todavía, solo retornar la respuesta
+      return {
+        requires_2fa: true,
+        two_factor_enabled: data.two_factor_enabled,
+        message: data.message
+      };
+    }
+    
+    // Login exitoso sin 2FA
+    const { access, refresh, user } = data;
     localStorage.setItem('access_token', access);
     localStorage.setItem('refresh_token', refresh);
     localStorage.setItem('user', JSON.stringify(user));
     
-    return response.data;
+    return data;
   },
 
   // Registro de nuevo paciente
@@ -105,6 +117,38 @@ const authService = {
       token,
       new_password: newPassword,
     });
+    return response.data;
+  },
+
+  // ===== Métodos de 2FA =====
+  
+  // Verificar código 2FA
+  verify2FA: async (email, token) => {
+    const response = await api.post('/auth/2fa/verify/', { email, token });
+    return response.data;
+  },
+
+  // Habilitar 2FA
+  enable2FA: async () => {
+    const response = await api.post('/auth/2fa/enable/');
+    return response.data;
+  },
+
+  // Confirmar habilitación de 2FA
+  confirm2FA: async (token) => {
+    const response = await api.post('/auth/2fa/confirm/', { token });
+    return response.data;
+  },
+
+  // Deshabilitar 2FA
+  disable2FA: async (password) => {
+    const response = await api.post('/auth/2fa/disable/', { password });
+    return response.data;
+  },
+
+  // Regenerar tokens de respaldo
+  regenerateBackupTokens: async () => {
+    const response = await api.post('/auth/2fa/backup-tokens/');
     return response.data;
   },
 };

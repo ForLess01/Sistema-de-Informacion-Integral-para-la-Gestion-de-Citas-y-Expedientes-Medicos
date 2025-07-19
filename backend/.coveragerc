@@ -1,0 +1,158 @@
+# Configuración de Coverage.py para el sistema médico
+
+[run]
+# Directorio fuente
+source = .
+
+# Archivos y directorios a omitir
+omit =
+    # Omitir archivos de migraciones
+    */migrations/*
+    
+    # Omitir archivos de configuración
+    */settings/*
+    */wsgi.py
+    */asgi.py
+    manage.py
+    
+    # Omitir archivos de tests
+    */tests/*
+    */test_*.py
+    *_test.py
+    
+    # Omitir entornos virtuales
+    venv/*
+    env/*
+    .venv/*
+    
+    # Omitir archivos de caché
+    */__pycache__/*
+    *.pyc
+    
+    # Omitir archivos de administración de Django
+    */admin.py
+    
+    # Omitir archivos de aplicaciones de terceros
+    */site-packages/*
+    
+    # Omitir archivos estáticos y de medios
+    static/*
+    media/*
+    staticfiles/*
+
+# Incluir rama de código (branch coverage)
+branch = True
+
+# Archivos de datos de cobertura
+data_file = .coverage
+
+# Directorio para archivos de cobertura paralelos
+parallel = True
+
+# Contexto dinámico para tests
+dynamic_context = test_function
+
+[report]
+# Precisión del reporte
+precision = 2
+
+# Excluir líneas que no necesitan cobertura
+exclude_lines =
+    # Tener pragma: no cover
+    pragma: no cover
+    
+    # No cubrir funciones de debug
+    def __repr__
+    def __str__
+    
+    # No cubrir bloques if __name__ == "__main__"
+    if __name__ == .__main__.:
+    
+    # No cubrir clases abstractas
+    @abstract
+    @abstractmethod
+    
+    # No cubrir métodos no implementados
+    raise NotImplementedError
+    raise NotImplemented
+    
+    # No cubrir bloques de TYPE_CHECKING
+    if TYPE_CHECKING:
+    
+    # No cubrir bloques except que re-lanzan
+    except .*:
+        raise
+    
+    # No cubrir aserciones de debug
+    assert False
+    
+    # No cubrir bloques pass
+    pass
+    
+    # No cubrir definiciones de protocolo
+    class .*\(Protocol\):
+
+# Ignorar errores de cobertura en estos archivos
+ignore_errors = True
+
+# Mostrar líneas faltantes en el reporte
+show_missing = True
+
+# Omitir archivos vacíos
+skip_empty = True
+
+# Ordenar reporte por nombre de archivo
+sort = Name
+
+[html]
+# Directorio para reportes HTML
+directory = htmlcov
+title = Sistema Médico - Reporte de Cobertura
+# Incluir contexto en reportes HTML
+show_contexts = True
+
+[xml]
+# Archivo de salida para reporte XML (útil para CI/CD)
+output = coverage.xml
+
+[json]
+# Archivo de salida para reporte JSON
+output = coverage.json
+# Incluir contextos en JSON
+show_contexts = True
+
+[paths]
+# Mapeo de rutas para combinar datos de diferentes entornos
+source =
+    backend/
+    /app/backend/
+    */backend/
+
+[coverage:run]
+# Plugins personalizados (si se necesitan)
+plugins =
+    # django_coverage_plugin
+
+# Configuración específica para Django
+[coverage:django]
+# Configuración para medir cobertura de templates de Django
+# template_extensions = html, txt, tex, email
+
+# Threshold de cobertura mínima requerida
+[coverage:report]
+# Fallar si la cobertura está por debajo del 80%
+fail_under = 80
+
+# Contextos específicos para diferentes tipos de tests
+[coverage:context]
+# Definir contextos para diferentes tipos de tests
+test_*.py = test
+test_integration.py = integration
+test_performance.py = performance
+test_api_*.py = api
+
+# Configuración para tests paralelos
+[coverage:parallel]
+# Combinar datos de múltiples procesos
+parallel = True
+concurrency = multiprocessing

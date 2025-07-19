@@ -10,8 +10,7 @@ from decimal import Decimal
 import logging
 
 from appointments.models import Appointment
-from medical_records.models import Prescription, MedicalExam
-from pharmacy.models import Sale, SaleItem, Medication
+from pharmacy.models import Dispensation, Medication, MedicationBatch
 from authentication.models import User
 from .generators import FinancialReportGenerator
 from .cache import CachedReportMixin

@@ -256,8 +256,27 @@ financial_pharmacy_analysis_docs = swagger_auto_schema(
             schema=openapi.Schema(
                 type=openapi.TYPE_OBJECT,
                 properties={
-                    'sales_by_category': openapi.Schema(type=openapi.TYPE_ARRAY),
-                    'top_medications': openapi.Schema(type=openapi.TYPE_ARRAY)
+                    'sales_by_category': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'category': openapi.Schema(type=openapi.TYPE_STRING),
+                                'total_revenue': openapi.Schema(type=openapi.TYPE_NUMBER)
+                            }
+                        )
+                    ),
+                    'top_medications': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'name': openapi.Schema(type=openapi.TYPE_STRING),
+                                'units_sold': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'total_revenue': openapi.Schema(type=openapi.TYPE_NUMBER)
+                            }
+                        )
+                    )
                 }
             )
         )
@@ -277,8 +296,26 @@ emergency_case_summary_docs = swagger_auto_schema(
                 type=openapi.TYPE_OBJECT,
                 properties={
                     'period': openapi.Schema(type=openapi.TYPE_OBJECT),
-                    'cases_by_status': openapi.Schema(type=openapi.TYPE_ARRAY),
-                    'cases_by_priority': openapi.Schema(type=openapi.TYPE_ARRAY),
+                    'cases_by_status': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'status': openapi.Schema(type=openapi.TYPE_STRING),
+                                'count': openapi.Schema(type=openapi.TYPE_INTEGER)
+                            }
+                        )
+                    ),
+                    'cases_by_priority': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'priority': openapi.Schema(type=openapi.TYPE_STRING),
+                                'count': openapi.Schema(type=openapi.TYPE_INTEGER)
+                            }
+                        )
+                    ),
                     'statistics': openapi.Schema(
                         type=openapi.TYPE_OBJECT,
                         properties={
@@ -307,9 +344,36 @@ emergency_triage_analysis_docs = swagger_auto_schema(
             schema=openapi.Schema(
                 type=openapi.TYPE_OBJECT,
                 properties={
-                    'triage_distribution': openapi.Schema(type=openapi.TYPE_ARRAY),
-                    'triage_times': openapi.Schema(type=openapi.TYPE_ARRAY),
-                    'nurse_efficiency': openapi.Schema(type=openapi.TYPE_ARRAY)
+                    'triage_distribution': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'level': openapi.Schema(type=openapi.TYPE_STRING),
+                                'count': openapi.Schema(type=openapi.TYPE_INTEGER)
+                            }
+                        )
+                    ),
+                    'triage_times': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'duration': openapi.Schema(type=openapi.TYPE_NUMBER),
+                                'occurrences': openapi.Schema(type=openapi.TYPE_INTEGER)
+                            }
+                        )
+                    ),
+                    'nurse_efficiency': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'nurse': openapi.Schema(type=openapi.TYPE_STRING),
+                                'efficiency_score': openapi.Schema(type=openapi.TYPE_NUMBER)
+                            }
+                        )
+                    ),
                 }
             )
         )
@@ -328,7 +392,16 @@ emergency_response_times_docs = swagger_auto_schema(
                 type=openapi.TYPE_OBJECT,
                 properties={
                     'response_metrics': openapi.Schema(type=openapi.TYPE_OBJECT),
-                    'response_by_priority': openapi.Schema(type=openapi.TYPE_ARRAY),
+                    'response_by_priority': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'priority': openapi.Schema(type=openapi.TYPE_STRING),
+                                'average_time': openapi.Schema(type=openapi.TYPE_NUMBER)
+                            }
+                        )
+                    ),
                     'standards_compliance': openapi.Schema(type=openapi.TYPE_OBJECT)
                 }
             )

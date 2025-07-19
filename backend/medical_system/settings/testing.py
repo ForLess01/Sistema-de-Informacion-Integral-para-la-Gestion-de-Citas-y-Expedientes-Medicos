@@ -1,10 +1,14 @@
 """
 Testing settings for medical_system project.
 """
-from .base import *
+from .development import *
 
 # Testing configuration
 DEBUG = False
+
+# Deshabilitar Debug Toolbar para pruebas
+INSTALLED_APPS = [app for app in INSTALLED_APPS if app != 'debug_toolbar']
+MIDDLEWARE = [m for m in MIDDLEWARE if 'debug_toolbar' not in m]
 
 # Use SQLite for tests for speed
 DATABASES = {

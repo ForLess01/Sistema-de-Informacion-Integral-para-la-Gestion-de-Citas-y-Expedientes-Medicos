@@ -4,6 +4,7 @@ from .models import (
     MedicationBatch, StockMovement, PharmacyReport
 )
 from authentication.serializers import UserSerializer
+from authentication.models import User
 
 
 class MedicationSerializer(serializers.ModelSerializer):
@@ -22,10 +23,26 @@ class DispensationSerializer(serializers.ModelSerializer):
     pharmacist = UserSerializer(read_only=True)
     medication_name = serializers.CharField(source='medication.name', read_only=True)
     
+    # Campos para aceptar IDs al crear/actualizar
+    patient_id = serializers.PrimaryKeyRelatedField(
+        source='patient', 
+        queryset=User.objects.filter(role='patient'), 
+        write_only=True,
+        required=False
+    )
+    pharmacist_id = serializers.PrimaryKeyRelatedField(
+        source='pharmacist', 
+        queryset=User.objects.filter(role='pharmacist'), 
+        write_only=True,
+        required=False
+    )
+    
     class Meta:
         model = Dispensation
-        fields = '__all__'
-        read_only_fields = ['dispensed_at']
+        fields = ['id', 'medication', 'quantity', 'patient', 'patient_id', 
+                  'pharmacist', 'pharmacist_id', 'dispensed_at', 'notes', 
+                  'medication_name']
+        read_only_fields = ['dispensed_at', 'pharmacist']
 
 
 class MedicationCategorySerializer(serializers.ModelSerializer):

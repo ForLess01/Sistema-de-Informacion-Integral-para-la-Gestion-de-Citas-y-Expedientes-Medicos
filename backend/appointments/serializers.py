@@ -134,8 +134,8 @@ class AppointmentReminderSerializer(serializers.ModelSerializer):
             'appointment_id': str(obj.appointment.appointment_id),
             'patient': obj.appointment.patient.get_full_name(),
             'doctor': obj.appointment.doctor.get_full_name(),
-            'date': obj.appointment.appointment_date,
-            'time': obj.appointment.appointment_time
+            'date': obj.appointment.appointment_date.isoformat(),
+            'time': obj.appointment.appointment_time.isoformat()
         }
 
 

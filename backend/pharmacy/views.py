@@ -16,13 +16,14 @@ from .serializers import (
     StockMovementSerializer, PharmacyReportSerializer,
     MedicationInventorySerializer
 )
+from .permissions import IsPharmacistOrAdminOrReadOnly, IsPharmacistOrAdmin
 
 
 class MedicationViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de medicamentos"""
     queryset = Medication.objects.all()
     serializer_class = MedicationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsPharmacistOrAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['dosage_form']
     search_fields = ['name', 'description']
@@ -106,7 +107,7 @@ class DispensationViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de dispensaciones"""
     queryset = Dispensation.objects.all()
     serializer_class = DispensationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsPharmacistOrAdmin]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['patient', 'medication', 'pharmacist']
     

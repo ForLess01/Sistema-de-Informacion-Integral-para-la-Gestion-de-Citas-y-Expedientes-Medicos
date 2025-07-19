@@ -3,6 +3,8 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 import uuid
+from decimal import Decimal
+from datetime import date, timedelta
 from authentication.models import User
 
 
@@ -209,6 +211,232 @@ class StockMovement(models.Model):
     
     def __str__(self):
         return f"{self.get_movement_type_display()} - {self.medication.name} - {self.quantity}"
+
+
+class Inventory(models.Model):
+    """Inventario de medicamentos"""
+    medication = models.ForeignKey(
+        Medication,
+        on_delete=models.CASCADE,
+        related_name='inventory_records'
+    )
+    quantity = models.PositiveIntegerField()
+    batch_number = models.CharField(max_length=100, unique=True)
+    manufacturing_date = models.DateField(null=True, blank=True)
+    expiration_date = models.DateField()
+    supplier = models.CharField(max_length=200, blank=True)
+    purchase_price = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        validators=[MinValueValidator(Decimal('0.01'))],
+        null=True,
+        blank=True
+    )
+    location = models.CharField(max_length=50, blank=True)
+    minimum_stock = models.PositiveIntegerField(default=10)
+    maximum_stock = models.PositiveIntegerField(default=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Inventario'
+        verbose_name_plural = 'Inventarios'
+        ordering = ['medication__name', 'expiration_date']
+    
+    def __str__(self):
+        return f"{self.medication.name} - Lote: {self.batch_number}"
+    
+    def clean(self):
+        if self.manufacturing_date and self.expiration_date <= self.manufacturing_date:
+            raise ValidationError('La fecha de expiración debe ser posterior a la fecha de fabricación')
+    
+    @property
+    def is_expired(self):
+        """Verifica si el medicamento está vencido"""
+        return self.expiration_date < date.today()
+    
+    @property
+    def days_until_expiration(self):
+        """Calcula los días restantes hasta la expiración"""
+        delta = self.expiration_date - date.today()
+        return delta.days
+    
+    def is_low_stock(self):
+        """Verifica si el stock está por debajo del mínimo"""
+        return self.quantity < self.minimum_stock
+    
+    def is_expiring_soon(self, days=30):
+        """Verifica si el medicamento está próximo a vencer"""
+        return 0 < self.days_until_expiration <= days
+    
+    @property
+    def reorder_quantity(self):
+        """Calcula la cantidad a reordenar para llegar al stock máximo"""
+        return self.maximum_stock - self.quantity
+    
+    def reduce_stock(self, quantity, reason):
+        """Reduce el stock del inventario"""
+        if quantity > self.quantity:
+            raise ValidationError(f"No hay suficiente stock. Disponible: {self.quantity}")
+        self.quantity -= quantity
+        self.save()
+        # Registrar movimiento
+        StockMovement.objects.create(
+            medication=self.medication,
+            movement_type='out',
+            quantity=quantity,
+            batch=self,
+            reason=reason,
+            stock_before=self.quantity + quantity,
+            stock_after=self.quantity
+        )
+        return self.quantity
+    
+    def increase_stock(self, quantity, reason):
+        """Aumenta el stock del inventario"""
+        self.quantity += quantity
+        self.save()
+        # Registrar movimiento
+        StockMovement.objects.create(
+            medication=self.medication,
+            movement_type='in',
+            quantity=quantity,
+            batch=self,
+            reason=reason,
+            stock_before=self.quantity - quantity,
+            stock_after=self.quantity
+        )
+        return self.quantity
+
+
+class Prescription(models.Model):
+    """Modelo para prescripciones médicas"""
+    STATUS_CHOICES = [
+        ('pending', 'Pendiente'),
+        ('dispensed', 'Dispensado'),
+        ('partially_dispensed', 'Parcialmente Dispensado'),
+        ('cancelled', 'Cancelado'),
+        ('expired', 'Expirado'),
+    ]
+    
+    prescription_number = models.CharField(max_length=20, unique=True, editable=False)
+    patient = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='pharmacy_prescriptions',
+        limit_choices_to={'role': 'patient'}
+    )
+    doctor = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='pharmacy_issued_prescriptions',
+        limit_choices_to={'role': 'doctor'}
+    )
+    diagnosis = models.CharField(max_length=255)
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(default=timezone.now)
+    dispensed_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancellation_reason = models.TextField(blank=True)
+    valid_days = models.PositiveIntegerField(default=30, help_text='Días de validez')
+    
+    class Meta:
+        verbose_name = 'Prescripción'
+        verbose_name_plural = 'Prescripciones'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['patient', 'status']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Prescripción #{self.prescription_number} - {self.patient.get_full_name()}"
+    
+    def save(self, *args, **kwargs):
+        # Generar número de prescripción automáticamente
+        if not self.prescription_number:
+            prefix = 'RX'
+            date_str = timezone.now().strftime('%y%m%d')
+            last_rx = Prescription.objects.filter(
+                prescription_number__startswith=f"{prefix}{date_str}"
+            ).order_by('prescription_number').last()
+            
+            if last_rx:
+                last_num = int(last_rx.prescription_number[8:])
+                self.prescription_number = f"{prefix}{date_str}{last_num+1:04d}"
+            else:
+                self.prescription_number = f"{prefix}{date_str}0001"
+        
+        super().save(*args, **kwargs)
+    
+    def clean(self):
+        # Validar que no se puede dispensar una prescripción sin items
+        if self.status == 'dispensed' and not self.items.exists():
+            raise ValidationError('No se puede dispensar una prescripción sin medicamentos')
+    
+    @property
+    def is_expired(self):
+        """Verifica si la prescripción ha expirado"""
+        expiry_date = self.created_at + timedelta(days=self.valid_days)
+        return timezone.now() > expiry_date
+    
+    @property
+    def total_amount(self):
+        """Calcula el monto total de la prescripción"""
+        total = Decimal('0.00')
+        for item in self.items.all():
+            total += item.medication.unit_price * item.quantity
+        return total
+
+
+class PrescriptionItem(models.Model):
+    """Items individuales de una prescripción"""
+    prescription = models.ForeignKey(
+        Prescription,
+        on_delete=models.CASCADE,
+        related_name='items'
+    )
+    medication = models.ForeignKey(
+        Medication,
+        on_delete=models.PROTECT,
+        related_name='prescription_items'
+    )
+    quantity = models.PositiveIntegerField()
+    dosage = models.CharField(max_length=100)
+    frequency = models.CharField(max_length=100)
+    duration_days = models.PositiveIntegerField(null=True, blank=True)
+    instructions = models.TextField(blank=True)
+    dispensed = models.BooleanField(default=False)
+    dispensed_quantity = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        verbose_name = 'Item de Prescripción'
+        verbose_name_plural = 'Items de Prescripción'
+    
+    def __str__(self):
+        return f"{self.medication.name} - {self.dosage}"
+    
+    @property
+    def total_doses(self):
+        """Calcula el número total de dosis basado en frecuencia y duración"""
+        if not self.duration_days:
+            return None
+            
+        # Interpretar frecuencia
+        if 'cada 8 horas' in self.frequency.lower() or '8h' in self.frequency.lower():
+            doses_per_day = 3
+        elif 'cada 12 horas' in self.frequency.lower() or '12h' in self.frequency.lower():
+            doses_per_day = 2
+        elif 'cada 24 horas' in self.frequency.lower() or 'diario' in self.frequency.lower():
+            doses_per_day = 1
+        elif 'cada 6 horas' in self.frequency.lower() or '6h' in self.frequency.lower():
+            doses_per_day = 4
+        else:
+            # Por defecto, asumimos una dosis diaria
+            doses_per_day = 1
+            
+        return doses_per_day * self.duration_days
 
 
 class PharmacyReport(models.Model):

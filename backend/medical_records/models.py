@@ -45,14 +45,14 @@ class Prescription(models.Model):
     patient = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='prescriptions',
+        related_name='medical_prescriptions',
         limit_choices_to={'role': 'patient'}
     )
     doctor = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
-        related_name='issued_prescriptions',
+        related_name='medical_issued_prescriptions',
         limit_choices_to={'role': 'doctor'}
     )
     medical_record = models.ForeignKey(

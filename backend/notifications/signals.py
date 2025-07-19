@@ -111,21 +111,26 @@ def create_appointment_reminder_signal(sender, instance, created, **kwargs):
     """
     if created and instance.status == 'scheduled':
         try:
+            # Asegurarse de que appointment_datetime sea timezone-aware
+            appointment_datetime = instance.appointment_datetime
+            if timezone.is_naive(appointment_datetime):
+                appointment_datetime = timezone.make_aware(appointment_datetime)
+            
             # Crear recordatorio 24 horas antes
             reminder_24h = timezone.now() + timedelta(hours=24)
-            if instance.appointment_datetime > reminder_24h:
+            if appointment_datetime > reminder_24h:
                 notification_service.create_appointment_reminder(
                     instance, 
-                    reminder_time=instance.appointment_datetime - timedelta(hours=24)
+                    reminder_time=appointment_datetime - timedelta(hours=24)
                 )
             
             # Crear recordatorio 2 horas antes (solo para citas importantes)
-            if instance.priority in ['high', 'urgent']:
+            if hasattr(instance, 'priority') and instance.priority in ['high', 'urgent']:
                 reminder_2h = timezone.now() + timedelta(hours=2)
-                if instance.appointment_datetime > reminder_2h:
+                if appointment_datetime > reminder_2h:
                     notification_service.create_appointment_reminder(
                         instance, 
-                        reminder_time=instance.appointment_datetime - timedelta(hours=2)
+                        reminder_time=appointment_datetime - timedelta(hours=2)
                     )
             
         except Exception as e:
@@ -162,19 +167,20 @@ def handle_medical_record_created(sender, instance, created, **kwargs):
             logger.error(f"Error creating medical record notification: {str(e)}")
 
 
-@receiver(post_save, sender='pharmacy.Prescription')
-def handle_prescription_ready(sender, instance, created, **kwargs):
+@receiver(post_save, sender='pharmacy.Dispensation')
+def handle_dispensation_ready(sender, instance, created, **kwargs):
     """
-    Maneja notificaciones cuando una receta está lista
+    Maneja notificaciones cuando se dispensa un medicamento
     """
-    if not created and instance.status == 'ready':
+    if created:
         try:
             context_data = {
                 'patient_name': instance.patient.get_full_name(),
                 'pharmacy_name': 'Farmacia del Hospital',
-                'prescription_id': str(instance.id),
-                'medications': ', '.join([med.name for med in instance.medications.all()[:3]]),
-                'ready_date': instance.updated_at.strftime('%d/%m/%Y'),
+                'dispensation_id': str(instance.id),
+                'medication': instance.medication.name,
+                'quantity': instance.quantity,
+                'dispensed_date': instance.dispensed_at.strftime('%d/%m/%Y'),
             }
             
             notifications = notification_service.create_notification(
@@ -195,7 +201,7 @@ def handle_emergency_alert(sender, instance, created, **kwargs):
     """
     Maneja alertas de emergencia
     """
-    if created and instance.priority in ['high', 'critical']:
+    if created and instance.triage_level in [1, 2]:  # Niveles críticos de triaje
         try:
             # Notificar a todos los doctores de emergencia
             emergency_doctors = User.objects.filter(
@@ -207,11 +213,10 @@ def handle_emergency_alert(sender, instance, created, **kwargs):
             
             context_data = {
                 'patient_name': instance.patient.get_full_name(),
-                'priority': instance.get_priority_display(),
-                'triage_level': instance.triage_level,
-                'symptoms': instance.symptoms[:100] + '...' if len(instance.symptoms) > 100 else instance.symptoms,
+                'triage_level': instance.get_triage_level_display() if instance.triage_level else 'Sin evaluar',
+                'chief_complaint': instance.chief_complaint[:100] + '...' if len(instance.chief_complaint) > 100 else instance.chief_complaint,
                 'arrival_time': instance.arrival_time.strftime('%H:%M'),
-                'case_id': str(instance.id),
+                'case_id': str(instance.case_id),
             }
             
             for doctor in emergency_doctors:

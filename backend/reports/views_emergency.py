@@ -9,7 +9,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 import logging
 
-from emergency.models import EmergencyCase, TriageAssessment, EmergencyTreatment
+from emergency.models import EmergencyCase
 from authentication.models import User
 from .generators import EmergencyReportGenerator
 from .swagger_docs import (
@@ -54,25 +54,27 @@ class EmergencyReportViewSet(viewsets.ViewSet):
             count=Count('id')
         ).order_by('status')
         
-        # Total de casos por prioridad
-        cases_by_priority = EmergencyCase.objects.filter(
+        # Total de casos por nivel de triaje
+        cases_by_triage = EmergencyCase.objects.filter(
             arrival_time__date__range=[start_date, end_date]
-        ).values('priority').annotate(
+        ).values('triage_level').annotate(
             count=Count('id'),
             avg_wait_time=Avg(
                 F('triage_time') - F('arrival_time'),
                 output_field=models.DurationField()
             )
-        ).order_by('priority')
+        ).order_by('triage_level')
         
         # Estadísticas generales
         total_stats = EmergencyCase.objects.filter(
             arrival_time__date__range=[start_date, end_date]
         ).aggregate(
             total_cases=Count('id'),
-            critical_cases=Count('id', filter=Q(priority='critical')),
-            urgent_cases=Count('id', filter=Q(priority='urgent')),
-            standard_cases=Count('id', filter=Q(priority='standard')),
+            triage_1=Count('id', filter=Q(triage_level=1)),
+            triage_2=Count('id', filter=Q(triage_level=2)),
+            triage_3=Count('id', filter=Q(triage_level=3)),
+            triage_4=Count('id', filter=Q(triage_level=4)),
+            triage_5=Count('id', filter=Q(triage_level=5)),
             completed_cases=Count('id', filter=Q(status='discharged')),
             admitted_cases=Count('id', filter=Q(status='admitted'))
         )
@@ -83,7 +85,7 @@ class EmergencyReportViewSet(viewsets.ViewSet):
                 'end_date': end_date
             },
             'cases_by_status': list(cases_by_status),
-            'cases_by_priority': list(cases_by_priority),
+            'cases_by_triage_level': list(cases_by_triage),
             'statistics': total_stats
         })
     
