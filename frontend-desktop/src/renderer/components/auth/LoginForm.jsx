@@ -24,15 +24,34 @@ const LoginForm = ({ onLoginSuccess }) => {
   const [isShaking, setIsShaking] = useState(false);
   const [isProcessingLogin, setIsProcessingLogin] = useState(false);
 
+  // Función para validar rol de usuario autorizado
+  const validateAuthorizedUser = (user) => {
+    const authorizedRoles = ['admin', 'doctor', 'nurse', 'pharmacist', 'receptionist', 'emergency'];
+    return authorizedRoles.includes(user.role);
+  };
+
   // Mutación para el login inicial
   const loginMutation = useMutation({
     mutationFn: (credentials) => authService.login(credentials),
     onSuccess: async (data) => {
       if (data.requires_2fa) {
+        // Validar que el usuario sea autorizado antes de proceder con 2FA
+        if (!validateAuthorizedUser(data.user)) {
+          setLoginError('Acceso denegado: Esta aplicación está restringida al personal médico y administrativo.');
+          toast.error('Acceso no autorizado para pacientes');
+          return;
+        }
         setShowTwoFactor(true);
         setFailedAttempts(0); // Resetear intentos fallidos después de login exitoso
         toast.info('Ingrese su código de autenticación de dos factores');
       } else {
+        // Validar que el usuario sea autorizado
+        if (!validateAuthorizedUser(data.user)) {
+          setLoginError('Acceso denegado: Esta aplicación está restringida al personal médico y administrativo.');
+          toast.error('Acceso no autorizado para pacientes');
+          return;
+        }
+        
         // Login exitoso sin 2FA
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
@@ -82,6 +101,15 @@ const LoginForm = ({ onLoginSuccess }) => {
   const twoFactorMutation = useMutation({
     mutationFn: (data) => authService.verify2FA(data),
     onSuccess: async (data) => {
+      // Validar que el usuario sea autorizado después del 2FA
+      if (!validateAuthorizedUser(data.user)) {
+        setLoginError('Acceso denegado: Esta aplicación está restringida al personal médico y administrativo.');
+        toast.error('Acceso no autorizado para pacientes');
+        setShowTwoFactor(false); // Volver al login inicial
+        setTwoFactorToken('');
+        return;
+      }
+      
       localStorage.setItem('access_token', data.access);
       localStorage.setItem('refresh_token', data.refresh);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -153,6 +181,7 @@ const LoginForm = ({ onLoginSuccess }) => {
       case 'nurse': return <User className="h-4 w-4" />;
       case 'pharmacist': return <User className="h-4 w-4" />;
       case 'receptionist': return <User className="h-4 w-4" />;
+      case 'emergency': return <User className="h-4 w-4" />;
       default: return <User className="h-4 w-4" />;
     }
   };
@@ -184,7 +213,8 @@ const LoginForm = ({ onLoginSuccess }) => {
       'doctor': `¡Bienvenid${genderSuffix[gender] || 'x'} Doctor${genderSuffix[gender] || 'x'}!`,
       'nurse': `¡Bienvenid${genderSuffix[gender] || 'x'} ${gender === 'male' ? 'Enfermero' : 'Enfermerx'}!`,
       'pharmacist': `¡Bienvenid${genderSuffix[gender] || 'x'} Farmacéutic${genderSuffix[gender] || 'x'}!`,
-      'receptionist': `¡Bienvenid${genderSuffix[gender] || 'x'} Administrativ${genderSuffix[gender] || 'x'}!`
+      'receptionist': `¡Bienvenid${genderSuffix[gender] || 'x'} Administrativ${genderSuffix[gender] || 'x'}!`,
+      'emergency': `¡Bienvenid${genderSuffix[gender] || 'x'} Personal de Emergencias!`
     };
     
     return roleMessages[role] || `¡Bienvenid${genderSuffix[gender] || 'x'} ${first_name}!`;

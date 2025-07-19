@@ -212,8 +212,7 @@ const createLoginWindow = () => {
       preload: path.join(__dirname, 'preload.cjs')
     },
     frame: false,
-    transparent: true,
-    roundedCorners: true  // 🎨 Esquinas redondeadas (solo en macOS nativamente)
+    transparent: true
   });
 
   if (isDev) {

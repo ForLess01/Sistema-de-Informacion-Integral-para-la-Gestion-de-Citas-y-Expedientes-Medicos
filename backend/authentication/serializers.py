@@ -8,6 +8,16 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializer básico para usuarios"""
     full_name = serializers.CharField(source='get_full_name', read_only=True)
     username = serializers.EmailField(source='email', read_only=True)
+    gender = serializers.SerializerMethodField()
+    
+    def get_gender(self, obj):
+        """Mapear género de base de datos a formato frontend"""
+        gender_mapping = {
+            'M': 'male',
+            'F': 'female', 
+            'O': 'other'
+        }
+        return gender_mapping.get(obj.gender, 'other')
     
     class Meta:
         model = User
