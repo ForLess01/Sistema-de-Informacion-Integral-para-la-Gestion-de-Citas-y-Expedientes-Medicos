@@ -165,8 +165,24 @@ const createMenu = () => {
   Menu.setApplicationMenu(menu);
 };
 
+// Función para obtener la ruta del dashboard según el rol
+const getDashboardRoute = (userRole) => {
+  const roleRoutes = {
+    'doctor': '/doctor-dashboard',
+    'nurse': '/nurse-dashboard',
+    'admin': '/admin-dashboard',
+    'receptionist': '/admin-dashboard',
+    'pharmacist': '/pharmacy-dashboard',
+    'emergency': '/emergency-dashboard',
+    'obstetriz': '/obstetriz-dashboard',
+    'odontologo': '/odontologo-dashboard'
+  };
+  
+  return roleRoutes[userRole] || '/general-dashboard';
+};
+
 // Crear ventana principal
-const createMainWindow = () => {
+const createMainWindow = (userData = null) => {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -180,12 +196,21 @@ const createMainWindow = () => {
     show: false
   });
 
+  // Determinar la ruta a cargar
+  let targetRoute = '/';
+  if (userData && userData.role) {
+    targetRoute = getDashboardRoute(userData.role);
+    console.log(`🎯 ROUTING: Dirigiendo a ${userData.role} -> ${targetRoute}`);
+  }
+
   // Cargar la aplicación
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL(`http://localhost:5173${targetRoute}`);
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
+    mainWindow.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'), {
+      hash: targetRoute
+    });
   }
 
   mainWindow.once('ready-to-show', () => {
@@ -246,8 +271,8 @@ app.on('window-all-closed', () => {
 });
 
 // IPC Handlers
-ipcMain.handle('login-success', async () => {
-  console.log('🔐 LOGIN SUCCESS: Handler llamado');
+ipcMain.handle('login-success', async (event, userData) => {
+  console.log('🔐 LOGIN SUCCESS: Handler llamado con userData:', userData);
   
   // PROTECCIÓN 1: Verificar si ya estamos procesando un login
   if (isProcessingLogin) {
@@ -285,8 +310,8 @@ ipcMain.handle('login-success', async () => {
     isMainWindowCreating = true;
     
     // Crear ventana principal ANTES de cerrar login
-    console.log('🏗️  CREATING: Nueva ventana principal');
-    createMainWindow();
+    console.log('🏗️  CREATING: Nueva ventana principal con role:', userData?.role);
+    createMainWindow(userData);
     
     // Esperar a que la ventana principal esté lista antes de cerrar login
     return new Promise((resolve) => {

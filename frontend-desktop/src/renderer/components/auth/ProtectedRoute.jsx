@@ -100,7 +100,10 @@ const getRoleName = (role) => {
     'nurse': 'Enfermero/a',
     'pharmacist': 'Farmacéutico',
     'receptionist': 'Recepcionista',
-    'patient': 'Paciente'
+    'patient': 'Paciente',
+    'obstetriz': 'Obstetriz',
+    'odontologo': 'Odontólogo',
+    'emergency': 'Personal de Emergencia'
   };
   return roleNames[role] || role;
 };

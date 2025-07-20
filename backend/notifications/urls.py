@@ -28,6 +28,7 @@ urlpatterns = [
     path('send/', views.SendNotificationView.as_view(), name='send'),
     path('bulk/', views.BulkNotificationView.as_view(), name='bulk'),
     path('test/', views.test_notification, name='test'),
+    path('test-email/', views.send_test_email, name='test-email'),
     path('retry/', views.retry_failed_notifications_view, name='retry'),
     
     # Estadísticas y logs

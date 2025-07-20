@@ -53,4 +53,44 @@ api.interceptors.response.use(
   }
 );
 
+// Funciones para manejo de preferencias de notificación
+export const getNotificationPreferences = async () => {
+  try {
+    const response = await api.get('/notifications/preferences/');
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Error al obtener preferencias' };
+  }
+};
+
+export const updateNotificationPreference = async (preferenceKey, value) => {
+  try {
+    const response = await api.patch('/notifications/preferences/', {
+      [preferenceKey]: value
+    });
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Error al actualizar preferencia' };
+  }
+};
+
+export const sendTestEmail = async () => {
+  try {
+    const response = await api.post('/notifications/test-email/');
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Error al enviar email de prueba' };
+  }
+};
+
+// Función para cambiar contraseña
+export const changePassword = async (passwordData) => {
+  try {
+    const response = await api.post('/auth/change-password/', passwordData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || error.response?.data?.error || 'Error al cambiar la contraseña' };
+  }
+};
+
 export default api;

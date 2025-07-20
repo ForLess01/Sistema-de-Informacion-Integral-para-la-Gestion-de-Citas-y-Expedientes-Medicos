@@ -55,6 +55,8 @@ class DoctorUserAdmin(UserAdmin):
             'pharmacist': ('💊', 'Farmacéutico', '#e83e8c'),
             'receptionist': ('📋', 'Administrativo', '#ffc107'),
             'emergency': ('🚑', 'Emergencias', '#dc3545'),
+            'obstetriz': ('🤱', 'Obstetriz', '#fd7e14'),
+            'odontologo': ('🦷', 'Odontólogo', '#20c997'),
             'admin': ('⚙️', 'Administrador', '#6f42c1')
         }
         

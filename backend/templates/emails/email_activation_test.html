@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notificaciones por Email Activadas</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 300;
+      }
+      .header .emoji {
+        font-size: 48px;
+        margin-bottom: 10px;
+      }
+      .content {
+        padding: 30px;
+        color: #333;
+      }
+      .success-badge {
+        background: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        display: inline-block;
+        margin: 20px 0;
+        font-weight: bold;
+      }
+      .info-box {
+        background: #f8f9fa;
+        border-left: 4px solid #667eea;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 5px;
+      }
+      .reminder-list {
+        background: #e3f2fd;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+      .reminder-list h3 {
+        margin-top: 0;
+        color: #1976d2;
+      }
+      .reminder-list ul {
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+      .reminder-list li {
+        margin: 8px 0;
+        color: #424242;
+      }
+      .footer {
+        background: #f8f9fa;
+        padding: 20px 30px;
+        border-top: 1px solid #dee2e6;
+        text-align: center;
+        color: #6c757d;
+        font-size: 14px;
+      }
+      .button {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        margin: 15px 0;
+        font-weight: bold;
+      }
+      .date-info {
+        color: #6c757d;
+        font-style: italic;
+        margin-top: 20px;
+      }
+      @media (max-width: 600px) {
+        .container {
+          margin: 10px;
+          border-radius: 0;
+        }
+        .header,
+        .content,
+        .footer {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="emoji">🔔</div>
+        <h1>¡Notificaciones Activadas!</h1>
+      </div>
+
+      <div class="content">
+        <h2>¡Hola {{ user_name }}! 👋</h2>
+
+        <div class="success-badge">✅ Configuración Exitosa</div>
+
+        <p>
+          Las <strong>notificaciones por email</strong> han sido activadas
+          correctamente en tu cuenta del {{ system_name }}.
+        </p>
+
+        <div class="info-box">
+          <p><strong>📧 Tu dirección de correo:</strong> {{ user_email }}</p>
+          <p>
+            Este es un mensaje de prueba para confirmar que recibirás tus
+            recordatorios de citas médicas en esta dirección.
+          </p>
+        </div>
+
+        <div class="reminder-list">
+          <h3>📋 Tipos de recordatorios que recibirás:</h3>
+          <ul>
+            <li>
+              <strong>📅 Recordatorios de citas próximas</strong> - 24 horas
+              antes de tu cita
+            </li>
+            <li>
+              <strong>✅ Confirmaciones de citas agendadas</strong> -
+              Inmediatamente al agendar
+            </li>
+            <li>
+              <strong>🔄 Cancelaciones o reprogramaciones</strong> - Cuando haya
+              cambios en tu cita
+            </li>
+            <li>
+              <strong>📊 Resultados de exámenes</strong> - Cuando estén
+              disponibles (si está habilitado)
+            </li>
+          </ul>
+        </div>
+
+        <div class="info-box">
+          <h4>🛡️ Tu privacidad es importante</h4>
+          <p>
+            Tus datos están protegidos y solo recibirás notificaciones
+            relacionadas con tu atención médica. Si no deseas recibir estos
+            recordatorios, puedes desactivarlos en cualquier momento desde tu
+            perfil.
+          </p>
+        </div>
+
+        <div class="date-info">
+          <p><strong>Fecha de activación:</strong> {{ activation_date }}</p>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>
+          <strong>{{ system_name }}</strong><br />
+          {{ hospital_name }}
+        </p>
+        <p style="margin-top: 15px; font-size: 12px">
+          Este es un mensaje automático, por favor no respondas a este correo.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

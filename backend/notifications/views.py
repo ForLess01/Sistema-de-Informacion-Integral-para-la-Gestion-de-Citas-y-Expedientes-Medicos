@@ -8,7 +8,9 @@ from django.shortcuts import get_object_or_404
 from django.core.cache import cache
 from django.utils import timezone
 from django.db.models import Q, Count
+from django.conf import settings
 from datetime import timedelta
+import logging
 
 from .models import (
     Notification,
@@ -32,6 +34,8 @@ from .serializers import (
 )
 # from .services import notification_service  # Temporarily commented for testing external integrations
 from .tasks import send_notification_task, send_notification_batch
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationListView(generics.ListAPIView):
@@ -489,3 +493,135 @@ def retry_failed_notifications_view(request):
         'message': 'Tarea de reintento iniciada',
         'task_id': task.id
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def send_test_email(request):
+    """Envía un email de prueba cuando el usuario activa las notificaciones por email"""
+    
+    try:
+        from .services.email_service import EmailService
+        
+        user = request.user
+        
+        # Verificar si el usuario tiene email
+        if not user.email:
+            return Response(
+                {'error': 'No tienes un email configurado en tu perfil'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Obtener o crear preferencias del usuario
+        preferences, created = NotificationPreference.objects.get_or_create(user=user)
+        
+        # Activar las notificaciones por email si se solicita
+        if request.data.get('enable_email', False):
+            preferences.email_enabled = True
+            preferences.appointment_reminders = True
+            preferences.save()
+        
+        # Crear el servicio de email
+        email_service = EmailService()
+        
+        # Datos para el template
+        context = {
+            'user_name': user.get_full_name(),
+            'user_email': user.email,
+            'activation_date': timezone.now().strftime('%d/%m/%Y a las %H:%M'),
+            'system_name': 'SIIGCEM🩺',
+            'hospital_name': getattr(settings, 'HOSPITAL_NAME', 'Hospital General'),
+        }
+        
+        subject = "🔔 Notificaciones por Email Activadas - Mensaje de Prueba"
+        
+        # Intentar usar template HTML, si no existe usar mensaje simple
+        try:
+            success = email_service.send_template_email(
+                to_emails=[user.email],
+                template_name='email_activation_test',
+                context=context,
+                subject=subject
+            )
+        except Exception:
+            # Fallback a mensaje simple si no existe el template
+            message = f"""
+¡Hola {user.get_full_name()}!
+
+✅ Las notificaciones por email han sido activadas correctamente en tu cuenta.
+
+Este es un mensaje de prueba para confirmar que recibirás tus recordatorios de citas médicas en esta dirección de correo: {user.email}
+
+Tipo de recordatorios que recibirás:
+• Recordatorios de citas próximas
+• Confirmaciones de citas agendadas
+• Cancelaciones o reprogramaciones
+
+Fecha de activación: {context['activation_date']}
+
+Si no deseas recibir estos recordatorios, puedes desactivarlos en cualquier momento desde tu perfil.
+
+---
+{context['system_name']}
+{context['hospital_name']}
+            """.strip()
+            
+            success = email_service.send_email(
+                to_emails=[user.email],
+                subject=subject,
+                message=message
+            )
+        
+        if success:
+            # Crear registro de notificación para auditoria
+            from .models import NotificationTemplate, Notification
+            
+            # Intentar obtener template, si no crear uno temporal
+            try:
+                template = NotificationTemplate.objects.get(
+                    notification_type='welcome',
+                    channel='email'
+                )
+            except NotificationTemplate.DoesNotExist:
+                # Crear un template temporal para el email de prueba
+                template = NotificationTemplate.objects.create(
+                    name='Email de Activación - Prueba',
+                    notification_type='welcome',
+                    channel='email',
+                    subject_template='🔔 Notificaciones por Email Activadas - Mensaje de Prueba',
+                    body_template='Email de prueba para confirmación de activación de notificaciones por email.',
+                    is_html=True,
+                    is_active=True
+                )
+            
+            # Crear registro de notificación
+            notification = Notification.objects.create(
+                recipient=user,
+                template=template,
+                subject=subject,
+                message="Email de prueba - Activación de notificaciones",
+                channel='email',
+                status='sent',
+                sent_at=timezone.now(),
+                recipient_email=user.email,
+                context_data=context
+            )
+            
+            return Response({
+                'success': True,
+                'message': f'Email de prueba enviado exitosamente a {user.email}',
+                'email': user.email,
+                'notification_id': str(notification.notification_id)
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'success': False,
+                'error': 'No se pudo enviar el email de prueba. Verifica la configuración del servidor de correo.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    except Exception as e:
+        logger.error(f"Error enviando email de prueba a {user.email}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': f'Error interno del servidor: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

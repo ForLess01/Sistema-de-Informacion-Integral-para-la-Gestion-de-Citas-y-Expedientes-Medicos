@@ -5,7 +5,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   versions: process.versions,
   
   // Funciones de autenticación
-  loginSuccess: () => ipcRenderer.invoke('login-success'),
+  loginSuccess: (userData) => ipcRenderer.invoke('login-success', userData),
   logout: () => ipcRenderer.invoke('logout'),
   
   // Funciones de debug para login

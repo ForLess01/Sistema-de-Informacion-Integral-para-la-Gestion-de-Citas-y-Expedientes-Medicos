@@ -89,6 +89,16 @@ const authService = {
       return user.doctor_profile.specialties.includes(specialtyId);
     }
     
+    // Obstetriz puede acceder a especialidad de Obstetricia (ID: 7)
+    if (user.role === 'obstetriz') {
+      return specialtyId === 7;
+    }
+    
+    // Odontólogo puede acceder a especialidad de Odontología (ID: 8)
+    if (user.role === 'odontologo') {
+      return specialtyId === 8;
+    }
+    
     // Personal administrativo y enfermeras pueden acceder a todas
     return ['nurse', 'receptionist'].includes(user.role);
   },

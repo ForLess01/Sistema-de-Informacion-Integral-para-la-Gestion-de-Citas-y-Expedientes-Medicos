@@ -26,7 +26,7 @@ const LoginForm = ({ onLoginSuccess }) => {
 
   // Función para validar rol de usuario autorizado
   const validateAuthorizedUser = (user) => {
-    const authorizedRoles = ['admin', 'doctor', 'nurse', 'pharmacist', 'receptionist', 'emergency'];
+    const authorizedRoles = ['admin', 'doctor', 'nurse', 'pharmacist', 'receptionist', 'emergency', 'obstetriz', 'odontologo'];
     return authorizedRoles.includes(user.role);
   };
 
@@ -73,8 +73,8 @@ const LoginForm = ({ onLoginSuccess }) => {
         if (window.electronAPI) {
           try {
             setIsProcessingLogin(true);
-            console.log('Notificando login exitoso a Electron...');
-            const result = await window.electronAPI.loginSuccess();
+            console.log('Notificando login exitoso a Electron con usuario:', data.user);
+            const result = await window.electronAPI.loginSuccess(data.user);
             console.log('Respuesta de Electron:', result);
             // No navegar - la ventana se cerrará y abrirá la principal
           } catch (error) {
@@ -122,7 +122,8 @@ const LoginForm = ({ onLoginSuccess }) => {
       // Notificar a Electron que el login fue exitoso
       if (window.electronAPI) {
         try {
-          await window.electronAPI.loginSuccess();
+          console.log('Notificando 2FA exitoso a Electron con usuario:', data.user);
+          await window.electronAPI.loginSuccess(data.user);
           toast.success('¡Autenticación completada!');
         } catch (error) {
           console.error('Error notificando a Electron después de 2FA:', error);
@@ -214,7 +215,9 @@ const LoginForm = ({ onLoginSuccess }) => {
       'nurse': `¡Bienvenid${genderSuffix[gender] || 'x'} ${gender === 'male' ? 'Enfermero' : 'Enfermerx'}!`,
       'pharmacist': `¡Bienvenid${genderSuffix[gender] || 'x'} Farmacéutic${genderSuffix[gender] || 'x'}!`,
       'receptionist': `¡Bienvenid${genderSuffix[gender] || 'x'} Administrativ${genderSuffix[gender] || 'x'}!`,
-      'emergency': `¡Bienvenid${genderSuffix[gender] || 'x'} Personal de Emergencias!`
+      'emergency': `¡Bienvenid${genderSuffix[gender] || 'x'} Personal de Emergencias!`,
+      'obstetriz': `¡Bienvenid${genderSuffix[gender] || 'x'} Obstetriz!`,
+      'odontologo': `¡Bienvenid${genderSuffix[gender] || 'x'} Odontólog${genderSuffix[gender] || 'x'}!`
     };
     
     return roleMessages[role] || `¡Bienvenid${genderSuffix[gender] || 'x'} ${first_name}!`;

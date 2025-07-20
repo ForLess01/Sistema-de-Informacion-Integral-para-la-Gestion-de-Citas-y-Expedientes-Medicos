@@ -206,6 +206,25 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
+# Celery Beat Schedule - Tareas periódicas
+CELERY_BEAT_SCHEDULE = {
+    # Enviar recordatorios de citas cada 5 minutos
+    'send-appointment-reminders': {
+        'task': 'notifications.tasks.send_appointment_reminders',
+        'schedule': 300.0,  # Cada 5 minutos (300 segundos)
+    },
+    # Limpiar notificaciones antiguas diariamente
+    'cleanup-old-notifications': {
+        'task': 'notifications.tasks.cleanup_old_notifications',
+        'schedule': 86400.0,  # Una vez al día (86400 segundos)
+    },
+    # Reintentar notificaciones fallidas cada 10 minutos
+    'retry-failed-notifications': {
+        'task': 'notifications.tasks.retry_failed_notifications',
+        'schedule': 600.0,  # Cada 10 minutos (600 segundos)
+    },
+}
+
 # DRF Spectacular settings para documentación API
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Medical System API',

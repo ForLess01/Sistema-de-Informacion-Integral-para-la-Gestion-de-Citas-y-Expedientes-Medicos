@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import TwoFactorModal from '../components/auth/TwoFactorModal';
+import { getNotificationPreferences, updateNotificationPreference, sendTestEmail, changePassword } from '../services/api';
 
 const Profile = () => {
   const { user, enable2FA, confirm2FA, disable2FA, regenerateBackupTokens } = useAuth();
@@ -46,7 +47,7 @@ const Profile = () => {
   });
 
   // Sincronizar formData cuando el usuario cambie
-  useEffect(() => {
+useEffect(() => {
     if (user) {
       setFormData({
         first_name: user.first_name || '',
@@ -58,6 +59,15 @@ const Profile = () => {
         emergency_contact: user.emergency_contact || '',
         emergency_phone: user.emergency_phone || '',
       });
+      async function fetchNotificationPreferences() {
+        const result = await getNotificationPreferences();
+        if(result.success) {
+          setNotifications(result.data);
+        } else {
+          toast.error(result.error);
+        }
+      }
+      fetchNotificationPreferences();
     }
   }, [user]);
 
@@ -77,11 +87,22 @@ const Profile = () => {
     }));
   };
 
-  const handleNotificationChange = (key) => {
+const handleNotificationChange = async (key) => {
+    const newValue = !notifications[key];
     setNotifications(prev => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: newValue
     }));
+    const result = await updateNotificationPreference(key, newValue);
+    if(result.success) {
+      toast.success('Preferencia actualizada exitosamente');
+      if(key === 'email_appointments' && newValue === true) {
+        await sendTestEmail();
+        toast.success('Recordatorio por correo enviado');
+      }
+    } else {
+      toast.error(result.error);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -95,18 +116,44 @@ const Profile = () => {
   };
 
   const handleChangePassword = async () => {
+    // Validaciones
+    if (!passwordData.current_password) {
+      toast.error('Por favor ingresa tu contraseña actual');
+      return;
+    }
+    
+    if (!passwordData.new_password) {
+      toast.error('Por favor ingresa una nueva contraseña');
+      return;
+    }
+    
+    if (passwordData.new_password.length < 8) {
+      toast.error('La nueva contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    
     if (passwordData.new_password !== passwordData.confirm_password) {
       toast.error('Las contraseñas no coinciden');
       return;
     }
+    
     try {
-      // Aquí iría la llamada a la API para cambiar la contraseña
-      toast.success('Contraseña actualizada exitosamente');
-      setPasswordData({
-        current_password: '',
-        new_password: '',
-        confirm_password: '',
+      const result = await changePassword({
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password,
+        confirm_password: passwordData.confirm_password
       });
+      
+      if (result.success) {
+        toast.success('Contraseña actualizada exitosamente');
+        setPasswordData({
+          current_password: '',
+          new_password: '',
+          confirm_password: '',
+        });
+      } else {
+        toast.error(result.error);
+      }
     } catch (error) {
       toast.error('Error al cambiar la contraseña');
     }
@@ -667,11 +714,6 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    <div className="pt-4">
-                      <button className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all">
-                        Guardar Preferencias
-                      </button>
-                    </div>
                   </motion.div>
                 )}
               </div>
