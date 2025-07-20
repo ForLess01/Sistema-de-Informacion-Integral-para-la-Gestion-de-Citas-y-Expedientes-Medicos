@@ -86,10 +86,38 @@ export const sendTestEmail = async () => {
 // Función para cambiar contraseña
 export const changePassword = async (passwordData) => {
   try {
-    const response = await api.post('/auth/change-password/', passwordData);
+    // Mapear los nombres de los campos para que coincidan con el serializer del backend
+    const payload = {
+      old_password: passwordData.current_password,
+      new_password: passwordData.new_password,
+      new_password_confirm: passwordData.confirm_password
+    };
+    
+    const response = await api.post('/auth/change-password/', payload);
     return { success: true, data: response.data };
   } catch (error) {
-    return { success: false, error: error.response?.data?.message || error.response?.data?.error || 'Error al cambiar la contraseña' };
+    let errorMessage = 'Error al cambiar la contraseña';
+    
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      
+      // Si hay errores específicos de campos
+      if (errorData.old_password) {
+        errorMessage = errorData.old_password[0] || errorData.old_password;
+      } else if (errorData.new_password) {
+        errorMessage = errorData.new_password[0] || errorData.new_password;
+      } else if (errorData.new_password_confirm) {
+        errorMessage = errorData.new_password_confirm[0] || errorData.new_password_confirm;
+      } else if (errorData.non_field_errors) {
+        errorMessage = errorData.non_field_errors[0] || errorData.non_field_errors;
+      } else if (errorData.detail) {
+        errorMessage = errorData.detail;
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    }
+    
+    return { success: false, error: errorMessage };
   }
 };
 
