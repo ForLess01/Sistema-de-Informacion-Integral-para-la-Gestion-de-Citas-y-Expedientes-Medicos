@@ -1,0 +1,59 @@
+# Core Django
+Django==5.2.3
+djangorestframework==3.16.0
+django-cors-headers==4.7.0
+django-redis==6.0.0
+dj-database-url==2.1.0
+whitenoise==6.6.0
+gunicorn==21.2.0
+
+# Database
+psycopg2-binary==2.9.9
+SQLAlchemy>=2.0.29
+
+# Authentication & Security
+PyJWT==2.8.0
+cryptography==42.0.8
+bcrypt==4.1.2
+
+# API Documentation
+drf-yasg==1.21.10
+uritemplate==4.2.0
+
+# Task Processing
+celery==5.5.3
+redis==6.2.0
+amqp==5.3.1
+kombu==5.5.4
+billiard==4.2.1
+vine==5.1.0
+
+# Web Sockets
+Flask-SocketIO==5.3.6
+python-socketio==5.11.0
+python-engineio==4.12.1
+simple-websocket==1.1.0
+
+# Utilities
+Pillow==10.2.0
+python-dotenv==1.0.1
+requests==2.31.0
+urllib3>=2.2.2
+idna==3.7
+chardet==5.2.0
+python-dateutil==2.8.2
+pytz==2024.1
+tzdata==2025.2
+dnspython==2.7.0
+
+# Testing
+pytest>=8.1.0
+pytest-django==4.8.0
+factory-boy==3.3.0
+coverage>=7.5.0
+
+# Development tools
+ipython==8.20.0
+black==24.1.1
+flake8==7.0.0
+isort==5.13.2
