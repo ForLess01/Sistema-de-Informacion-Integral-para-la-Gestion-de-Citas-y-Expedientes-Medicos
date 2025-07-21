@@ -55,9 +55,25 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('❌ Error en login:', error);
+      
+      let errorMessage = 'Error al iniciar sesión';
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Si hay errores específicos de campos (como non_field_errors)
+        if (errorData.non_field_errors) {
+          errorMessage = errorData.non_field_errors[0] || errorData.non_field_errors;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      }
+      
       return { 
         success: false, 
-        error: error.response?.data?.detail || 'Error al iniciar sesión' 
+        error: errorMessage
       };
     }
   };

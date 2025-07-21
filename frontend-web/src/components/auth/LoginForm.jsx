@@ -99,8 +99,20 @@ const LoginForm = () => {
     >
       <div className="backdrop-blur-lg bg-white/10 rounded-3xl shadow-2xl p-8 border border-white/20">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">Bienvenido</h2>
-          <p className="text-white/70">Inicia sesión en tu cuenta</p>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            <span className="bg-blue-500 bg-clip-text text-transparent text-5xl">
+              SIIGCEM
+            </span>
+          </h1>
+          <h2 className="text-2xl font-semibold text-white mb-2">
+            👩‍⚕️Bienvenido,querido Paciente🫀
+          </h2>
+          <p className="text-white/80 text-lg">
+            Tu salud es nuestra prioridad. Inicia sesión para acceder a nuestros servicios médicos.
+          </p>
+          <p className="text-white/60 text-sm mt-2">
+            Sistema Integral de Información para la Gestión de Citas y Expedientes Médicos
+          </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -154,7 +166,7 @@ const LoginForm = () => {
           <div className="flex items-center justify-between">
             <Link
               to="/forgot-password"
-              className="text-sm text-blue-300 hover:text-blue-200 transition-colors"
+              className="font-semibold text-sm text-red-500 hover:text-red-300 transition-colors"
             >
               ¿Olvidaste tu contraseña?
             </Link>
@@ -169,7 +181,7 @@ const LoginForm = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="w-full py-3 px-4 bg-blue-500/40 text-white font-semibold rounded-2xl backdrop-blur-md shadow-lg border border-white/20 hover:bg-blue-600/50 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isLoading ? (
               <>
@@ -187,7 +199,7 @@ const LoginForm = () => {
             ¿No tienes una cuenta?{' '}
             <Link
               to="/register"
-              className="text-blue-300 hover:text-blue-200 font-medium transition-colors"
+              className="font-semibold text-sm text-blue-600 hover:text-blue-300 transition-colors"
             >
               Regístrate aquí
             </Link>

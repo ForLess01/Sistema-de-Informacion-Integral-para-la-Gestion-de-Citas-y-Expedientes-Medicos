@@ -31,8 +31,8 @@ const authService = {
       // Transformar los datos para que coincidan con lo que espera el backend
       const transformedData = {
         ...userData,
-        password_confirm: userData.confirm_password,
-        role: 'patient' // Por defecto registramos pacientes
+        password_confirm: userData.confirm_password
+        // El rol de paciente se asigna automáticamente en el backend
       };
       
       // Eliminar el campo confirm_password que no espera el backend
