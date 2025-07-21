@@ -79,7 +79,8 @@ class HospitalOccupancyView(views.APIView):
         for i in range(7):
             date = current_date - timedelta(days=i)
             day_hospitalizations = Hospitalization.objects.filter(
-                admission_date__lte=date,
+                admission_date__lte=date
+            ).filter(
                 Q(discharge_date__gte=date) | Q(discharge_date__isnull=True)
             ).count()
             
@@ -207,7 +208,8 @@ class BedManagementReportView(views.APIView):
             'efficiency_indicators': {
                 'bed_occupancy_days': total_beds * days_in_period,
                 'patient_days': hospitalizations.filter(
-                    admission_date__lte=end_date,
+                    admission_date__lte=end_date
+                ).filter(
                     Q(discharge_date__gte=start_date) | Q(discharge_date__isnull=True)
                 ).count() * avg_length_of_stay if avg_length_of_stay > 0 else 0,
                 'average_daily_admissions': round(total_admissions / days_in_period, 2),
