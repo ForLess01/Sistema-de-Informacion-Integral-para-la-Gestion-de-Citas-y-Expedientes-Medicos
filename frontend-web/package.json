@@ -1,13 +1,25 @@
 {
   "name": "frontend-web",
   "version": "1.0.0",
+  "description": "Web interface for Medical Appointments and Records Management System",
   "type": "module",
+  "author": "UNAP VI Semester Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/Sistema-de-Informacion-Integral-para-la-Gestion-de-Citas-y-Expedientes-Medicos.git"
+  },
   "scripts": {
     "dev": "vite --port 3000",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "test": "jest"
+    "test": "jest",
+    "analyze": "vite build --mode analyze",
+    "format": "prettier --write 'src/**/*.{js,jsx,css}'",
+    "clean": "rimraf dist node_modules",
+    "prepare": "npm run lint && npm run test",
+    "start": "vite --port 3000"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",

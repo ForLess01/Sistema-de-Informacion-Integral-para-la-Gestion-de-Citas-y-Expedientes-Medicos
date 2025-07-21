@@ -2,8 +2,15 @@
   "name": "frontend-desktop",
   "private": true,
   "version": "1.0.0",
+  "description": "Desktop application for Medical Appointments and Records Management System",
   "type": "module",
+  "author": "UNAP VI Semester Team",
+  "license": "MIT",
   "main": "src/electron/main.cjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/Sistema-de-Informacion-Integral-para-la-Gestion-de-Citas-y-Expedientes-Medicos.git"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
@@ -11,7 +18,14 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:build": "electron-builder",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write 'src/**/*.{js,jsx,css}'",
+    "clean": "rimraf dist node_modules",
+    "test": "jest",
+    "package:win": "electron-builder --win",
+    "package:mac": "electron-builder --mac",
+    "package:linux": "electron-builder --linux"
   },
   "dependencies": {
     "@electron/remote": "^2.1.3",
