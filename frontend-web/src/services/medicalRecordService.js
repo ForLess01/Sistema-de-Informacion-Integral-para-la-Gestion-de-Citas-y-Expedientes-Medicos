@@ -44,6 +44,17 @@ const medicalRecordService = {
     return response.data;
   },
 
+  // Crear nueva prescripción médica
+  createPrescription: async (prescriptionData) => {
+    try {
+      const response = await api.post('/medical-records/prescriptions/', prescriptionData);
+      return response.data;
+    } catch (error) {
+      console.error('Error al crear prescripción:', error);
+      throw error;
+    }
+  },
+
   // Obtener historial de exámenes de laboratorio
   getLabResults: async (params = {}) => {
     const response = await api.get('/medical-records/lab-results/', { params });
