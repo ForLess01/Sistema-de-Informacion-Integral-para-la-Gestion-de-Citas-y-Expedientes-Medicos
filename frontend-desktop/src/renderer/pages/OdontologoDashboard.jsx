@@ -5,14 +5,27 @@ import {
   Calendar, Users, Activity, FileText, 
   AlertCircle, Shield, Zap, Clock,
   UserCheck, Bell, ChevronRight, 
-  Smile, TrendingUp, Heart
+  Smile, TrendingUp, Heart, Stethoscope,
+  ClipboardList, Target, Eye, Plus,
+  BarChart3, Package, Link2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import dashboardService from '../services/dashboardService';
+import dentalService from '../services/dentalService';
+import { useModuleIntegration } from '../hooks/useModuleIntegration';
+// import PatientIntegrationView from '../components/PatientIntegrationView'; // Componente por crear
 
 const OdontologoDashboard = () => {
+  // Integración modular para compartir datos cross-módulo
+  const { 
+    shareData, 
+    getSharedData, 
+    subscribeToModule, 
+    notifyModules 
+  } = useModuleIntegration('odontologia');
+
   // Obtener estadísticas del dashboard específicas para odontología
   const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ['odontologoDashboardStats'],
@@ -30,6 +43,65 @@ const OdontologoDashboard = () => {
     queryKey: ['activeTreatments'],
     queryFn: dashboardService.getActiveTreatments,
   });
+
+  // Obtener estadísticas de procedimientos dentales
+  const { data: procedureStats, isLoading: loadingProcedureStats } = useQuery({
+    queryKey: ['dentalProcedureStats'],
+    queryFn: dentalService.getDentalProcedureStats,
+  });
+
+  // Obtener estadísticas de planes de tratamiento
+  const { data: treatmentPlanStats, isLoading: loadingTreatmentPlanStats } = useQuery({
+    queryKey: ['treatmentPlanStats'],
+    queryFn: dentalService.getTreatmentPlanStats,
+  });
+
+  // Obtener datos compartidos de otros módulos (pacientes, citas generales, etc.)
+  const sharedPatientData = getSharedData('pacientes');
+  const sharedAppointmentData = getSharedData('citas');
+
+  // Compartir estadísticas dentales con otros módulos
+  React.useEffect(() => {
+    if (stats && procedureStats && treatmentPlanStats) {
+      shareData({
+        type: 'dental-statistics',
+        data: {
+          totalProcedures: procedureStats.total,
+          activeTreatments: stats.active_treatments,
+          todayAppointments: stats.appointments_today,
+          emergenciesMonth: stats.emergencies_month,
+          newPatients: stats.new_patients
+        },
+        timestamp: new Date().toISOString(),
+        module: 'odontologia'
+      });
+    }
+  }, [stats, procedureStats, treatmentPlanStats, shareData]);
+
+  // Suscribirse a notificaciones de otros módulos
+  React.useEffect(() => {
+    const unsubscribePacientes = subscribeToModule('pacientes', (data) => {
+      console.log('Notificación del módulo pacientes:', data);
+      // Refresco datos si hay cambios relevantes en pacientes
+      if (data.type === 'patient-update' || data.type === 'new-patient') {
+        // Invalidar queries relacionadas
+        window.location.reload(); // Simple refresh - en producción usar query invalidation
+      }
+    });
+
+    const unsubscribeCitas = subscribeToModule('citas', (data) => {
+      console.log('Notificación del módulo citas:', data);
+      if (data.type === 'appointment-update') {
+        // Actualizar citas del día
+        window.location.reload();
+      }
+    });
+
+    return () => {
+      unsubscribePacientes();
+      unsubscribeCitas();
+    };
+  }, [subscribeToModule]);
 
   const statsCards = [
     {
@@ -266,12 +338,24 @@ const OdontologoDashboard = () => {
           transition={{ delay: 0.6 }}
           className="mt-6 backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20"
         >
-          <h2 className="text-xl font-semibold text-white mb-4">Acciones Rápidas</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link to="/dental-exam/new">
+          <h2 className="text-xl font-semibold text-white mb-4">Acciones Rápidas - Odontología</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Link to="/dental-history">
               <button className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium rounded-xl hover:from-cyan-600 hover:to-blue-700 transition duration-200 flex items-center justify-center">
-                <Smile className="h-5 w-5 mr-2" />
-                Examen Dental
+                <FileText className="h-5 w-5 mr-2" />
+                Historial Dental
+              </button>
+            </Link>
+            <Link to="/treatment-plan">
+              <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
+                <ClipboardList className="h-5 w-5 mr-2" />
+                Plan Tratamiento
+              </button>
+            </Link>
+            <Link to="/dental-procedures">
+              <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
+                <Activity className="h-5 w-5 mr-2" />
+                Procedimientos
               </button>
             </Link>
             <Link to="/appointments/new">
@@ -280,18 +364,38 @@ const OdontologoDashboard = () => {
                 Nueva Cita
               </button>
             </Link>
-            <Link to="/treatments/new">
+            <Link to="/patients">
               <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
-                <Activity className="h-5 w-5 mr-2" />
-                Plan Tratamiento
+                <Smile className="h-5 w-5 mr-2" />
+                Pacientes
               </button>
             </Link>
-            <Link to="/x-rays/new">
+            <Link to="/dental-chart">
               <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
-                <Zap className="h-5 w-5 mr-2" />
-                Rayos X
+                <Eye className="h-5 w-5 mr-2" />
+                Odontograma
               </button>
             </Link>
+          </div>
+        </motion.div>
+
+        {/* Integration View - Cross-Module Data */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="mt-6 backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white flex items-center">
+              <Link2 className="h-5 w-5 mr-2" />
+              Integración de Módulos
+            </h2>
+          </div>
+          
+          {/* <PatientIntegrationView currentModule="odontologia" /> */}
+          <div className="text-center text-cyan-200 py-8">
+            <p>Vista de integración de módulos - En desarrollo</p>
           </div>
         </motion.div>
 
@@ -299,7 +403,7 @@ const OdontologoDashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.8 }}
           className="mt-6 backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20"
         >
           <div className="flex items-center justify-between mb-4">

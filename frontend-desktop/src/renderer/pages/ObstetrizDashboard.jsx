@@ -10,25 +10,25 @@ import {
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import dashboardService from '../services/dashboardService';
+import obstetricService from '../services/obstetricService';
 
 const ObstetrizDashboard = () => {
   // Obtener estadísticas del dashboard específicas para obstetricia
   const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ['obstetrizDashboardStats'],
-    queryFn: dashboardService.getObstetrizDashboardStats,
+    queryFn: obstetricService.getObstetricDashboardStats,
   });
 
   // Obtener citas del día para obstetricia
   const { data: todayAppointments, isLoading: loadingAppointments } = useQuery({
     queryKey: ['obstetrizTodayAppointments'],
-    queryFn: dashboardService.getObstetrizTodayAppointments,
+    queryFn: obstetricService.getTodayObstetricAppointments,
   });
 
   // Obtener pacientes embarazadas en seguimiento
   const { data: pregnantPatients, isLoading: loadingPregnant } = useQuery({
     queryKey: ['pregnantPatients'],
-    queryFn: dashboardService.getPregnantPatients,
+    queryFn: obstetricService.getPregnantPatientsForDashboard,
   });
 
   const statsCards = [
@@ -126,15 +126,20 @@ const ObstetrizDashboard = () => {
             transition={{ delay: 0.4 }}
             className="lg:col-span-2 backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-white flex items-center">
-                <Calendar className="h-5 w-5 mr-2" />
-                Citas de Hoy - Obstetricia
-              </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white flex items-center">
+              <Calendar className="h-5 w-5 mr-2" />
+              Citas de Hoy - Obstetricia
+            </h2>
+            <div className="flex items-center space-x-2">
+              <Link to="/medical/waiting-room" className="text-pink-300 hover:text-pink-200 text-xs flex items-center">
+                Sala de Espera <ChevronRight className="h-3 w-3 ml-1" />
+              </Link>
               <Link to="/appointments" className="text-pink-300 hover:text-pink-200 text-sm flex items-center">
                 Ver todas <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
             </div>
+          </div>
 
             {loadingAppointments ? (
               <div className="flex justify-center py-8">
@@ -263,11 +268,11 @@ const ObstetrizDashboard = () => {
           className="mt-6 backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20"
         >
           <h2 className="text-xl font-semibold text-white mb-4">Acciones Rápidas</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link to="/prenatal-control/new">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Link to="/medical/new-consultation">
               <button className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-medium rounded-xl hover:from-pink-600 hover:to-purple-700 transition duration-200 flex items-center justify-center">
                 <Stethoscope className="h-5 w-5 mr-2" />
-                Control Prenatal
+                Nueva Consulta
               </button>
             </Link>
             <Link to="/appointments/new">
@@ -276,16 +281,28 @@ const ObstetrizDashboard = () => {
                 Nueva Cita
               </button>
             </Link>
-            <Link to="/ultrasound/new">
+            <Link to="/medical/medical-records">
               <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
-                <Activity className="h-5 w-5 mr-2" />
-                Ecografía
+                <FileText className="h-5 w-5 mr-2" />
+                Expedientes
               </button>
             </Link>
-            <Link to="/birth-plan/new">
+            <Link to="/medical/prescription-manager">
+              <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
+                <Activity className="h-5 w-5 mr-2" />
+                Recetas
+              </button>
+            </Link>
+            <Link to="/medical/diagnosis-history">
               <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
                 <Heart className="h-5 w-5 mr-2" />
-                Plan de Parto
+                Diagnósticos
+              </button>
+            </Link>
+            <Link to="/prenatal-control/new">
+              <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
+                <Baby className="h-5 w-5 mr-2" />
+                Control Prenatal
               </button>
             </Link>
           </div>

@@ -370,6 +370,34 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
+    @action(detail=False, methods=['get'], url_path='my-appointments')
+    def my_appointments(self, request):
+        """Obtener las citas del usuario actual"""
+        user = request.user
+        date_param = request.query_params.get('date')
+        
+        # Filtrar las citas del usuario actual
+        appointments = self.get_queryset()
+        
+        # Si se proporciona una fecha, filtrar por esa fecha
+        if date_param:
+            try:
+                from datetime import datetime
+                selected_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+                appointments = appointments.filter(appointment_date=selected_date)
+            except ValueError:
+                return Response(
+                    {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Ordenar por fecha y hora
+        appointments = appointments.order_by('appointment_date', 'appointment_time')
+        
+        # Serializar y devolver
+        serializer = self.get_serializer(appointments, many=True)
+        return Response(serializer.data)
+    
     @action(detail=False, methods=['get'])
     def doctors_by_specialty(self, request, specialty_id=None):
         """Obtener doctores por especialidad desde la base de datos"""

@@ -73,7 +73,7 @@ const NurseDashboard = () => {
       change: stats?.vitals_change || '+0%',
       icon: Heart,
       color: 'from-purple-500 to-purple-600',
-      link: '/vital-signs',
+      link: '/medical/vital-signs',
     },
   ];
 
@@ -346,7 +346,7 @@ const NurseDashboard = () => {
           className="mt-6 backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20"
         >
           <h2 className="text-xl font-semibold text-white mb-4">Acciones Rápidas</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <button
               onClick={() => setShowTriageForm(true)}
               className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-teal-600 text-white font-medium rounded-xl hover:from-green-600 hover:to-teal-700 transition duration-200 flex items-center justify-center"
@@ -354,22 +354,34 @@ const NurseDashboard = () => {
               <ClipboardList className="h-5 w-5 mr-2" />
               Nuevo Triaje
             </button>
-            <Link to="/vital-signs/new">
+            <Link to="/nurse/station">
+              <button className="w-full py-3 px-4 bg-gradient-to-r from-teal-500 to-green-600 text-white font-medium rounded-xl hover:from-teal-600 hover:to-green-700 transition duration-200 flex items-center justify-center">
+                <UserCheck className="h-5 w-5 mr-2" />
+                Estación de Enfermería
+              </button>
+            </Link>
+            <Link to="/nurse/monitoring">
+              <button className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-600 hover:to-indigo-700 transition duration-200 flex items-center justify-center">
+                <Heart className="h-5 w-5 mr-2" />
+                Monitoreo Pacientes
+              </button>
+            </Link>
+            <Link to="/medical/vital-signs">
               <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
                 <Heart className="h-5 w-5 mr-2" />
                 Signos Vitales
               </button>
             </Link>
-            <Link to="/check-in">
+            <Link to="/medical/waiting-room">
               <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
                 <UserCheck className="h-5 w-5 mr-2" />
-                Check-in
+                Sala de Espera
               </button>
             </Link>
-            <Link to="/appointments">
+            <Link to="/patients/check-in">
               <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
                 <Calendar className="h-5 w-5 mr-2" />
-                Citas
+                Check-in
               </button>
             </Link>
           </div>

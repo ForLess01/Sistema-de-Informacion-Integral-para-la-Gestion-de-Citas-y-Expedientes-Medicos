@@ -5,7 +5,7 @@ import {
   Calendar, Users, Activity, FileText, 
   AlertCircle, Stethoscope, Clock, Heart,
   UserCheck, Bell, ChevronRight, 
-  TrendingUp, ClipboardList, Eye
+  TrendingUp, ClipboardList, Eye, Zap
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -282,7 +282,7 @@ const DoctorDashboard = () => {
               <UserCheck className="h-5 w-5 mr-2 text-green-400" />
               Pacientes en Espera de Consulta
             </h2>
-            <Link to="/waiting-room" className="text-blue-300 hover:text-blue-200 text-sm flex items-center">
+            <Link to="/medical/waiting-room" className="text-blue-300 hover:text-blue-200 text-sm flex items-center">
               Ver sala de espera <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
@@ -334,8 +334,8 @@ const DoctorDashboard = () => {
           className="mt-6 backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20"
         >
           <h2 className="text-xl font-semibold text-white mb-4">Acciones Rápidas</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link to="/consultation/new">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Link to="/medical/new-consultation">
               <button className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-700 transition duration-200 flex items-center justify-center">
                 <Stethoscope className="h-5 w-5 mr-2" />
                 Nueva Consulta
@@ -347,16 +347,28 @@ const DoctorDashboard = () => {
                 Nuevo Paciente
               </button>
             </Link>
-            <Link to="/prescriptions/new">
+            <Link to="/medical/prescription-manager">
               <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
                 <FileText className="h-5 w-5 mr-2" />
-                Nueva Receta
+                Recetas
               </button>
             </Link>
-            <Link to="/medical-records">
+            <Link to="/medical/medical-records">
               <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
                 <Activity className="h-5 w-5 mr-2" />
                 Expedientes
+              </button>
+            </Link>
+            <Link to="/medical/diagnosis-history">
+              <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
+                <ClipboardList className="h-5 w-5 mr-2" />
+                Diagnósticos
+              </button>
+            </Link>
+            <Link to="/medical/vital-signs">
+              <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
+                <Heart className="h-5 w-5 mr-2" />
+                Signos Vitales
               </button>
             </Link>
           </div>

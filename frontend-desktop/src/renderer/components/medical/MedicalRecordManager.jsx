@@ -5,7 +5,12 @@ import { motion } from 'framer-motion';
 import { 
   FileText, Plus, Search, Calendar, 
   User, Activity, Pill, AlertCircle,
-  Download, Upload, Edit, Eye, ArrowLeft
+  Download, Upload, Edit, Eye, ArrowLeft,
+  Heart, Thermometer, Wind, Droplet,
+  FileCheck, Folder, ClipboardList,
+  UserCircle, Clock, ChevronRight,
+  Stethoscope, TestTube, Syringe,
+  Shield, Hash, TrendingUp
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -30,10 +35,16 @@ const MedicalRecordManager = ({ patientId: propPatientId }) => {
   }, [patientId]);
 
   // Obtener expediente médico
-  const { data: medicalRecord, isLoading } = useQuery({
+  const { data: medicalRecord, isLoading, error } = useQuery({
     queryKey: ['medicalRecord', patientId],
     queryFn: () => medicalRecordService.getPatientRecord(patientId),
     enabled: !!patientId,
+    retry: false, // No reintentar si es 404
+    onError: (error) => {
+      if (error.response?.status !== 404) {
+        toast.error('Error al cargar el expediente médico');
+      }
+    }
   });
 
   // Mutation para actualizar expediente
@@ -49,12 +60,12 @@ const MedicalRecordManager = ({ patientId: propPatientId }) => {
   });
 
   const tabs = [
-    { id: 'overview', label: 'Resumen', icon: FileText },
-    { id: 'diagnoses', label: 'Diagnósticos', icon: Activity },
+    { id: 'overview', label: 'Resumen General', icon: ClipboardList },
+    { id: 'vitals', label: 'Signos Vitales', icon: Heart },
+    { id: 'diagnoses', label: 'Diagnósticos', icon: Stethoscope },
     { id: 'prescriptions', label: 'Recetas', icon: Pill },
-    { id: 'labs', label: 'Laboratorio', icon: Activity },
-    { id: 'documents', label: 'Documentos', icon: FileText },
-    { id: 'vitals', label: 'Signos Vitales', icon: Activity },
+    { id: 'labs', label: 'Laboratorio', icon: TestTube },
+    { id: 'documents', label: 'Documentos', icon: Folder },
   ];
 
   const renderTabContent = () => {
@@ -84,127 +95,350 @@ const MedicalRecordManager = ({ patientId: propPatientId }) => {
     );
   }
 
-  return (
-    <div className="bg-white/10 rounded-2xl border border-white/20 p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-4">
-          {/* Botón de regreso si viene desde citas */}
-          {searchParams.get('patient') && (
-            <button
-              onClick={() => navigate('/appointments')}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
-              title="Volver a citas"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-          )}
-          <div>
-            <h2 className="text-2xl font-bold text-white">Expediente Médico</h2>
-            <p className="text-gray-400">
-              {medicalRecord?.patient?.name} - {medicalRecord?.patient?.medical_record_number}
-            </p>
+  // Manejar cuando no existe expediente médico
+  if (error?.response?.status === 404) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
+      >
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/10 p-8">
+            {/* Header */}
+            <div className="flex items-center space-x-4 mb-8">
+              {searchParams.get('patient') && (
+                <button
+                  onClick={() => navigate('/appointments')}
+                  className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300 group"
+                  title="Volver a citas"
+                >
+                  <ArrowLeft className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
+                </button>
+              )}
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                  Expediente Médico
+                </h2>
+                <p className="text-gray-400 mt-1">Sistema de Gestión Médica</p>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="text-center py-16">
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatDelay: 3
+                }}
+              >
+                <FileText className="h-24 w-24 text-gray-600 mx-auto mb-6" />
+              </motion.div>
+              
+              <h3 className="text-2xl font-semibold text-white mb-3">
+                No existe expediente médico
+              </h3>
+              <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                Este paciente aún no tiene un expediente médico registrado. 
+                Crea uno nuevo para comenzar a registrar su historial clínico.
+              </p>
+              
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  toast.info('La creación de expedientes estará disponible próximamente');
+                }}
+                className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl 
+                         hover:from-blue-600 hover:to-purple-700 transition-all duration-300 
+                         flex items-center mx-auto shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Crear Nuevo Expediente
+              </motion.button>
+            </div>
           </div>
         </div>
-        <div className="flex space-x-2">
-          <button className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition flex items-center">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </button>
-          <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center">
-            <Edit className="h-4 w-4 mr-2" />
-            Editar
-          </button>
-        </div>
-      </div>
+      </motion.div>
+    );
+  }
 
-      {/* Tabs */}
-      <div className="flex space-x-1 mb-6 border-b border-white/20">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 flex items-center space-x-2 transition-colors ${
-              activeTab === tab.id
-                ? 'text-blue-400 border-b-2 border-blue-400'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <tab.icon className="h-4 w-4" />
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6"
+    >
+      <div className="max-w-7xl mx-auto">
+        {/* Modern Header */}
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/10 p-6 mb-6"
+        >
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              {searchParams.get('patient') && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/appointments')}
+                  className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300 group"
+                >
+                  <ArrowLeft className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
+                </motion.button>
+              )}
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                  Expediente Médico Electrónico
+                </h1>
+                <div className="flex items-center space-x-3 mt-2">
+                  <div className="flex items-center space-x-2">
+                    <UserCircle className="h-5 w-5 text-blue-400" />
+                    <span className="text-gray-300 font-medium">
+                      {medicalRecord?.patient?.name || 'Cargando...'}
+                    </span>
+                  </div>
+                  <span className="text-gray-500">•</span>
+                  <div className="flex items-center space-x-2">
+                    <Hash className="h-4 w-4 text-purple-400" />
+                    <span className="text-gray-400 text-sm">
+                      {medicalRecord?.patient?.medical_record_number || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-5 py-2.5 bg-white/10 backdrop-blur-sm text-white rounded-xl hover:bg-white/20 transition-all duration-300 flex items-center border border-white/10"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 flex items-center shadow-lg"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
 
-      {/* Tab Content */}
-      <div className="mt-6">
-        {renderTabContent()}
+        {/* Modern Tabs */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white/5 backdrop-blur-lg rounded-2xl shadow-xl border border-white/10 p-2 mb-6"
+        >
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((tab, index) => (
+              <motion.button
+                key={tab.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-3 rounded-xl flex items-center space-x-2 transition-all duration-300 ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <tab.icon className={`h-5 w-5 ${
+                  activeTab === tab.id ? 'text-white' : ''
+                }`} />
+                <span className="font-medium">{tab.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Tab Content with Animation */}
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+          className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/10 p-6"
+        >
+          {renderTabContent()}
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
 // Componente de pestaña de resumen
 const OverviewTab = ({ record }) => (
-  <div className="space-y-6">
-    {/* Información básica */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="bg-white/5 rounded-xl p-4">
-        <h3 className="text-white font-semibold mb-3">Información Personal</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-400">Edad:</span>
-            <span className="text-white">{record?.patient?.age} años</span>
+  <motion.div 
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="space-y-6"
+  >
+    {/* Información básica con nuevo diseño */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Tarjeta de Información Personal */}
+      <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl p-6 border border-white/10 backdrop-blur-sm"
+      >
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="p-3 bg-blue-500/20 rounded-xl">
+            <UserCircle className="h-6 w-6 text-blue-400" />
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Tipo de Sangre:</span>
-            <span className="text-white">{record?.blood_type || 'No registrado'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Alergias:</span>
-            <span className="text-white">{record?.allergies?.length || 0}</span>
-          </div>
+          <h3 className="text-white font-semibold text-lg">Información Personal</h3>
         </div>
-      </div>
-
-      <div className="bg-white/5 rounded-xl p-4">
-        <h3 className="text-white font-semibold mb-3">Última Visita</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-400">Fecha:</span>
-            <span className="text-white">
-              {record?.last_visit ? 
-                format(new Date(record.last_visit), 'dd/MM/yyyy') : 
-                'Sin visitas'}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-400 flex items-center space-x-2">
+              <Calendar className="h-4 w-4" />
+              <span>Edad</span>
+            </span>
+            <span className="text-white font-medium">{record?.patient?.age || '-'} años</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-400 flex items-center space-x-2">
+              <Droplet className="h-4 w-4" />
+              <span>Tipo de Sangre</span>
+            </span>
+            <span className="text-white font-medium bg-red-500/20 px-2 py-1 rounded">
+              {record?.blood_type || 'No registrado'}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Motivo:</span>
-            <span className="text-white">{record?.last_visit_reason || '-'}</span>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-400 flex items-center space-x-2">
+              <Shield className="h-4 w-4" />
+              <span>Alergias</span>
+            </span>
+            <span className={`font-medium px-2 py-1 rounded ${
+              record?.allergies?.length > 0 
+                ? 'text-yellow-300 bg-yellow-500/20' 
+                : 'text-green-300 bg-green-500/20'
+            }`}>
+              {record?.allergies?.length || 0}
+            </span>
           </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Tarjeta de Última Visita */}
+      <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-2xl p-6 border border-white/10 backdrop-blur-sm"
+      >
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="p-3 bg-purple-500/20 rounded-xl">
+            <Clock className="h-6 w-6 text-purple-400" />
+          </div>
+          <h3 className="text-white font-semibold text-lg">Última Visita</h3>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <span className="text-gray-400 text-sm">Fecha</span>
+            <p className="text-white font-medium text-lg">
+              {record?.last_visit ? 
+                format(new Date(record.last_visit), 'dd MMMM yyyy', { locale: es }) : 
+                'Sin visitas registradas'}
+            </p>
+          </div>
+          <div>
+            <span className="text-gray-400 text-sm">Motivo de consulta</span>
+            <p className="text-white">
+              {record?.last_visit_reason || 'No especificado'}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Tarjeta de Estadísticas Rápidas */}
+      <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-2xl p-6 border border-white/10 backdrop-blur-sm"
+      >
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="p-3 bg-green-500/20 rounded-xl">
+            <TrendingUp className="h-6 w-6 text-green-400" />
+          </div>
+          <h3 className="text-white font-semibold text-lg">Resumen Clínico</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">
+              {record?.total_visits || 0}
+            </p>
+            <span className="text-gray-400 text-sm">Visitas totales</span>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">
+              {record?.active_prescriptions || 0}
+            </p>
+            <span className="text-gray-400 text-sm">Recetas activas</span>
+          </div>
+        </div>
+      </motion.div>
     </div>
 
-    {/* Resumen de condiciones */}
-    <div className="bg-white/5 rounded-xl p-4">
-      <h3 className="text-white font-semibold mb-3">Condiciones Activas</h3>
+    {/* Condiciones Activas con nuevo diseño */}
+    <motion.div 
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 0.2 }}
+      className="bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-2xl p-6 border border-white/10 backdrop-blur-sm"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="p-3 bg-orange-500/20 rounded-xl">
+            <AlertCircle className="h-6 w-6 text-orange-400" />
+          </div>
+          <h3 className="text-white font-semibold text-lg">Condiciones Activas</h3>
+        </div>
+        <span className="text-sm text-gray-400">
+          {record?.active_conditions?.length || 0} condición(es)
+        </span>
+      </div>
+      
       {record?.active_conditions?.length > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {record.active_conditions.map((condition, index) => (
-            <div key={index} className="flex items-center justify-between p-2 bg-white/5 rounded">
-              <span className="text-white">{condition.name}</span>
-              <span className="text-xs text-gray-400">
-                Desde {format(new Date(condition.diagnosed_date), 'MM/yyyy')}
+            <motion.div 
+              key={index}
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: index * 0.1 }}
+              className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                <span className="text-white font-medium">{condition.name}</span>
+              </div>
+              <span className="text-sm text-gray-400 bg-white/5 px-3 py-1 rounded-lg">
+                {format(new Date(condition.diagnosed_date), 'MMM yyyy', { locale: es })}
               </span>
-            </div>
+            </motion.div>
           ))}
         </div>
       ) : (
-        <p className="text-gray-400">No hay condiciones activas registradas</p>
+        <div className="text-center py-8">
+          <Shield className="h-12 w-12 text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-400">No hay condiciones activas registradas</p>
+        </div>
       )}
-    </div>
-  </div>
+    </motion.div>
+  </motion.div>
 );
 
 // Componente de pestaña de diagnósticos

@@ -71,8 +71,12 @@ class DoctorUserAdmin(UserAdmin):
     def get_specialties_display(self, obj):
         """Mostrar especialidades del doctor"""
         specialties = obj.medical_schedules.values_list('specialty__name', flat=True).distinct()
-        if specialties:
-            specialty_list = list(set(specialties))  # Eliminar duplicados
+        # Filtrar valores None y eliminar duplicados
+        specialty_list = list(set([s for s in specialties if s]))
+        
+        if specialty_list:
+            # Asegurarse de que todos los elementos son strings
+            specialty_list = [str(s) for s in specialty_list if s is not None]
             if len(specialty_list) > 2:
                 return f"{', '.join(specialty_list[:2])}... (+{len(specialty_list)-2})"
             return ', '.join(specialty_list)

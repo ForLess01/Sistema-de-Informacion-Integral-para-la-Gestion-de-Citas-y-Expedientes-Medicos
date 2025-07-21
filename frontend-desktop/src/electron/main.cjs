@@ -188,10 +188,12 @@ const createMainWindow = (userData = null) => {
     height: 900,
     minWidth: 1200,
     minHeight: 800,
+    title: 'SIIGCEM - Sistema Hospitalario',
+    icon: path.join(__dirname, '..', '..', 'assets', 'logoStethoscope.ico'), // Agregar ícono
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.cjs')
+      preload: path.join(__dirname, '..', 'preload', 'preload.js')
     },
     show: false
   });
@@ -227,17 +229,25 @@ const createMainWindow = (userData = null) => {
 
 // Crear ventana de login
 const createLoginWindow = () => {
+  console.log('🚀 CREATING LOGIN WINDOW');
   loginWindow = new BrowserWindow({
     width: 500,           // 🔧 Ajusta el ancho (era 500)
     height: 780,          // 🔧 Ajusta el alto (era 700)
     resizable: false,
+    title: 'SIIGCEM - Iniciar Sesión',
+    icon: path.join(__dirname, '..', '..', 'assets', 'icon.ico'), // Agregar ícono
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.cjs')
+      preload: path.join(__dirname, '..', 'preload', 'preload.js'),
+      webSecurity: false // Para desarrollo
     },
     frame: false,
-    transparent: true
+    transparent: true,
+    show: false, // No mostrar hasta que esté listo
+    center: true,
+    alwaysOnTop: false,
+    backgroundColor: isDev ? '#1a1a1a' : undefined // Color de fondo en desarrollo
   });
 
   if (isDev) {
@@ -248,7 +258,25 @@ const createLoginWindow = () => {
     });
   }
 
+  // Mostrar la ventana cuando esté lista
+  loginWindow.once('ready-to-show', () => {
+    console.log('✅ LOGIN WINDOW READY: Mostrando ventana de login');
+    loginWindow.show();
+    loginWindow.focus();
+  });
+
+  // Agregar evento para debug cuando se carga la página
+  loginWindow.webContents.on('did-finish-load', () => {
+    console.log('🎆 LOGIN WINDOW: Página cargada exitosamente');
+  });
+
+  // Manejar errores de carga
+  loginWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('❌ LOGIN WINDOW: Error al cargar página:', errorCode, errorDescription);
+  });
+
   loginWindow.on('closed', () => {
+    console.log('💭 LOGIN WINDOW: Ventana cerrada');
     loginWindow = null;
   });
 };

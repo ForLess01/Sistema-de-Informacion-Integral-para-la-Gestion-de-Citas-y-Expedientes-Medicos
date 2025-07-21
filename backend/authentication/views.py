@@ -4,9 +4,11 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from django.db.models import Q
+from datetime import datetime, date
 from .serializers import (
     UserSerializer, RegisterSerializer, ChangePasswordSerializer,
-    CustomTokenObtainPairSerializer
+    CustomTokenObtainPairSerializer, DesktopTokenObtainPairSerializer
 )
 from .services import TwoFactorService
 
@@ -14,8 +16,13 @@ User = get_user_model()
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
-    """Vista personalizada para obtención de tokens JWT"""
+    """Vista personalizada para obtención de tokens JWT - Frontend Web (solo pacientes)"""
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class DesktopTokenObtainPairView(TokenObtainPairView):
+    """Vista personalizada para obtención de tokens JWT - Frontend Desktop (personal médico y administrativo)"""
+    serializer_class = DesktopTokenObtainPairSerializer
 
 
 class RegisterView(generics.CreateAPIView):
@@ -235,3 +242,266 @@ class RegenerateBackupTokensView(APIView):
             'backup_tokens': new_tokens,
             'message': 'Tokens de respaldo regenerados exitosamente'
         }, status=status.HTTP_200_OK)
+
+
+class CheckEmailView(APIView):
+    """Vista para verificar si un email ya está registrado"""
+    permission_classes = (permissions.AllowAny,)
+    
+    def post(self, request):
+        email = request.data.get('email', '')
+        
+        if not email:
+            return Response(
+                {'error': 'Email es requerido'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verificar si el email ya existe
+        email_exists = User.objects.filter(email=email).exists()
+        
+        return Response({
+            'exists': email_exists,
+            'message': 'El email ya está registrado' if email_exists else 'Email disponible'
+        }, status=status.HTTP_200_OK)
+
+
+class CheckDNIView(APIView):
+    """Vista para verificar si un DNI ya está registrado"""
+    permission_classes = (permissions.AllowAny,)
+    
+    def post(self, request):
+        dni = request.data.get('dni', '')
+        
+        if not dni:
+            return Response(
+                {'error': 'DNI es requerido'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verificar si el DNI ya existe
+        dni_exists = User.objects.filter(dni=dni).exists()
+        
+        return Response({
+            'exists': dni_exists,
+            'message': 'El DNI ya está registrado' if dni_exists else 'DNI disponible'
+        }, status=status.HTTP_200_OK)
+
+
+# =====================================================
+# VISTAS ESPECÍFICAS PARA GESTIÓN DE PACIENTES
+# =====================================================
+
+class PatientListView(generics.ListCreateAPIView):
+    """Vista para listar y crear pacientes"""
+    serializer_class = UserSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    
+    def get_queryset(self):
+        """Obtener lista de pacientes con filtros"""
+        queryset = User.objects.filter(role='patient', is_active=True)
+        
+        # Filtro de búsqueda
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(dni__icontains=search) |
+                Q(phone__icontains=search) |
+                Q(email__icontains=search)
+            )
+        
+        # Filtro por género
+        gender = self.request.query_params.get('gender', None)
+        if gender and gender != 'all':
+            queryset = queryset.filter(gender=gender)
+        
+        # Filtro por rango de edad
+        age_range = self.request.query_params.get('age_range', None)
+        if age_range and age_range != 'all':
+            from django.utils import timezone
+            today = timezone.now().date()
+            
+            if age_range == '0-18':
+                start_date = today.replace(year=today.year - 18)
+                queryset = queryset.filter(date_of_birth__gte=start_date)
+            elif age_range == '19-35':
+                start_date = today.replace(year=today.year - 35)
+                end_date = today.replace(year=today.year - 19)
+                queryset = queryset.filter(
+                    date_of_birth__gte=start_date,
+                    date_of_birth__lte=end_date
+                )
+            elif age_range == '36-55':
+                start_date = today.replace(year=today.year - 55)
+                end_date = today.replace(year=today.year - 36)
+                queryset = queryset.filter(
+                    date_of_birth__gte=start_date,
+                    date_of_birth__lte=end_date
+                )
+            elif age_range == '56+':
+                end_date = today.replace(year=today.year - 56)
+                queryset = queryset.filter(date_of_birth__lte=end_date)
+        
+        return queryset.select_related('patient_profile').order_by('-date_joined')
+    
+    def list(self, request, *args, **kwargs):
+        """Listar pacientes con paginación"""
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        
+        if page is not None:
+            # Agregar información adicional de cada paciente
+            patients_data = []
+            for patient in page:
+                # Obtener última cita
+                from appointments.models import Appointment
+                last_appointment = Appointment.objects.filter(
+                    patient=patient
+                ).order_by('-appointment_date', '-appointment_time').first()
+                
+                patient_data = {
+                    'id': patient.id,
+                    'first_name': patient.first_name,
+                    'last_name': patient.last_name,
+                    'dni': patient.dni,
+                    'email': patient.email,
+                    'phone': patient.phone,
+                    'gender': patient.gender,
+                    'date_of_birth': patient.date_of_birth,
+                    'birth_date': patient.birth_date,  # Campo alternativo
+                    'address': patient.address,
+                    'city': patient.city,
+                    'state': patient.state,
+                    'date_joined': patient.date_joined,
+                    'is_active': patient.is_active,
+                    'age': patient.age,
+                    'last_appointment': {
+                        'date': last_appointment.appointment_date.strftime('%Y-%m-%d') if last_appointment else None,
+                        'time': last_appointment.appointment_time.strftime('%H:%M') if last_appointment else None,
+                        'doctor': f"{last_appointment.doctor.first_name} {last_appointment.doctor.last_name}" if last_appointment else None
+                    } if last_appointment else None,
+                    # Información del perfil de paciente si existe
+                    'patient_profile': {
+                        'blood_type': getattr(patient, 'patient_profile', {}).blood_type if hasattr(patient, 'patient_profile') and patient.patient_profile else None,
+                        'allergies': getattr(patient, 'patient_profile', {}).allergies if hasattr(patient, 'patient_profile') and patient.patient_profile else None,
+                        'chronic_conditions': getattr(patient, 'patient_profile', {}).chronic_conditions if hasattr(patient, 'patient_profile') and patient.patient_profile else None,
+                    } if hasattr(patient, 'patient_profile') and patient.patient_profile else None
+                }
+                patients_data.append(patient_data)
+            
+            return self.get_paginated_response(patients_data)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    def perform_create(self, serializer):
+        """Crear nuevo paciente"""
+        # Asegurar que el nuevo usuario sea un paciente
+        serializer.save(role='patient')
+
+
+class PatientDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Vista para obtener, actualizar o eliminar un paciente específico"""
+    serializer_class = UserSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    
+    def get_queryset(self):
+        return User.objects.filter(role='patient')
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Obtener detalles completos de un paciente"""
+        patient = self.get_object()
+        
+        # Obtener historial de citas
+        from appointments.models import Appointment
+        appointments = Appointment.objects.filter(
+            patient=patient
+        ).select_related('doctor', 'specialty').order_by('-appointment_date', '-appointment_time')[:10]
+        
+        patient_data = {
+            'id': patient.id,
+            'first_name': patient.first_name,
+            'last_name': patient.last_name,
+            'dni': patient.dni,
+            'email': patient.email,
+            'phone': patient.phone,
+            'emergency_phone': patient.emergency_phone,
+            'gender': patient.gender,
+            'date_of_birth': patient.date_of_birth,
+            'birth_date': patient.birth_date,
+            'address': patient.address,
+            'city': patient.city,
+            'state': patient.state,
+            'postal_code': patient.postal_code,
+            'emergency_contact_name': patient.emergency_contact_name,
+            'emergency_contact_phone': patient.emergency_contact_phone,
+            'date_joined': patient.date_joined,
+            'is_active': patient.is_active,
+            'age': patient.age,
+            # Información del perfil de paciente
+            'patient_profile': {
+                'blood_type': getattr(patient, 'patient_profile', {}).blood_type if hasattr(patient, 'patient_profile') and patient.patient_profile else None,
+                'allergies': getattr(patient, 'patient_profile', {}).allergies if hasattr(patient, 'patient_profile') and patient.patient_profile else None,
+                'chronic_conditions': getattr(patient, 'patient_profile', {}).chronic_conditions if hasattr(patient, 'patient_profile') and patient.patient_profile else None,
+                'insurance_provider': getattr(patient, 'patient_profile', {}).insurance_provider if hasattr(patient, 'patient_profile') and patient.patient_profile else None,
+                'insurance_policy_number': getattr(patient, 'patient_profile', {}).insurance_policy_number if hasattr(patient, 'patient_profile') and patient.patient_profile else None,
+            } if hasattr(patient, 'patient_profile') and patient.patient_profile else None,
+            # Historial de citas recientes
+            'recent_appointments': [{
+                'id': apt.id,
+                'date': apt.appointment_date.strftime('%Y-%m-%d'),
+                'time': apt.appointment_time.strftime('%H:%M'),
+                'doctor': f"{apt.doctor.first_name} {apt.doctor.last_name}",
+                'specialty': apt.specialty.name if apt.specialty else 'General',
+                'status': apt.status,
+                'reason': apt.reason
+            } for apt in appointments]
+        }
+        
+        return Response(patient_data)
+    
+    def perform_destroy(self, instance):
+        """Eliminación suave - marcar como inactivo"""
+        instance.is_active = False
+        instance.save()
+
+
+class PatientSearchView(APIView):
+    """Vista para búsqueda rápida de pacientes"""
+    permission_classes = (permissions.IsAuthenticated,)
+    
+    def get(self, request):
+        query = request.query_params.get('q', '')
+        
+        if len(query) < 2:
+            return Response({
+                'results': [],
+                'message': 'Ingresa al menos 2 caracteres para buscar'
+            })
+        
+        patients = User.objects.filter(
+            role='patient',
+            is_active=True
+        ).filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(dni__icontains=query) |
+            Q(phone__icontains=query)
+        )[:10]  # Limitar a 10 resultados
+        
+        results = []
+        for patient in patients:
+            results.append({
+                'id': patient.id,
+                'name': f"{patient.first_name} {patient.last_name}",
+                'dni': patient.dni,
+                'phone': patient.phone,
+                'age': patient.age
+            })
+        
+        return Response({
+            'results': results,
+            'count': len(results)
+        })

@@ -1,9 +1,9 @@
 import api from './api';
 
 const authService = {
-  // Login inicial
+  // Login inicial (específico para desktop - personal médico y administrativo)
   login: async (credentials) => {
-    const response = await api.post('/auth/login/', credentials);
+    const response = await api.post('/auth/desktop-login/', credentials);
     return response.data;
   },
 

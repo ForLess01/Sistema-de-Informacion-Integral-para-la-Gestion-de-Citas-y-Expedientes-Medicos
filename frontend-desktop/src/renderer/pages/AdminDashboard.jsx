@@ -1,17 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
   Calendar, Users, Settings, BarChart3,
   UserPlus, Clock, CheckSquare, Phone,
-  Bell, ChevronRight, TrendingUp, FileText
+  Bell, ChevronRight, TrendingUp, FileText,
+  Pill, Package, AlertTriangle, Ambulance,
+  Shield, FileBarChart, Home, Cog,
+  UserCog, CalendarDays, PhoneCall,
+  Building, Activity, Layers
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import dashboardService from '../services/dashboardService';
 
+// Importar componentes de administración
+import UserManagement from '../components/admin/UserManagement';
+import SystemSettings from '../components/admin/SystemSettings';
+import NotificationCenter from '../components/notifications/NotificationCenter';
+import ScheduleManagement from '../components/schedule/ScheduleManagement';
+import RoomManagement from '../components/facilities/RoomManagement';
+
 const AdminDashboard = () => {
+  // Estado para manejo de tabs/modales del panel admin
+  const [activeModule, setActiveModule] = useState('dashboard');
+  const [showNotifications, setShowNotifications] = useState(false);
+
   // Obtener estadísticas del dashboard para admin
   const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ['adminDashboardStats'],
@@ -59,7 +74,7 @@ const AdminDashboard = () => {
       change: stats?.checkins_change || '+0%',
       icon: CheckSquare,
       color: 'from-purple-500 to-purple-600',
-      link: '/check-ins',
+      link: '/patients/check-in',
     },
     {
       title: 'Llamadas Atendidas',
@@ -89,7 +104,10 @@ const AdminDashboard = () => {
             </p>
           </div>
           <div className="flex items-center space-x-4">
-            <button className="relative p-2 text-slate-200 hover:text-white transition-colors">
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 text-slate-200 hover:text-white transition-colors"
+            >
               <Bell className="h-6 w-6" />
               {stats?.pending_notifications > 0 && (
                 <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
@@ -98,6 +116,139 @@ const AdminDashboard = () => {
           </div>
         </motion.div>
 
+        {/* Admin Module Navigation */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6 backdrop-blur-lg bg-white/10 rounded-2xl p-4 border border-white/20"
+        >
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveModule('dashboard')}
+              className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
+                activeModule === 'dashboard'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'bg-white/10 text-slate-200 hover:bg-white/20'
+              }`}
+            >
+              <Home className="h-4 w-4" />
+              <span>Dashboard</span>
+            </button>
+            <button
+              onClick={() => setActiveModule('users')}
+              className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
+                activeModule === 'users'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'bg-white/10 text-slate-200 hover:bg-white/20'
+              }`}
+            >
+              <UserCog className="h-4 w-4" />
+              <span>Usuarios</span>
+            </button>
+            <button
+              onClick={() => setActiveModule('schedules')}
+              className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
+                activeModule === 'schedules'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'bg-white/10 text-slate-200 hover:bg-white/20'
+              }`}
+            >
+              <CalendarDays className="h-4 w-4" />
+              <span>Horarios</span>
+            </button>
+            <button
+              onClick={() => setActiveModule('facilities')}
+              className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
+                activeModule === 'facilities'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'bg-white/10 text-slate-200 hover:bg-white/20'
+              }`}
+            >
+              <Building className="h-4 w-4" />
+              <span>Instalaciones</span>
+            </button>
+            <button
+              onClick={() => setActiveModule('settings')}
+              className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
+                activeModule === 'settings'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'bg-white/10 text-slate-200 hover:bg-white/20'
+              }`}
+            >
+              <Cog className="h-4 w-4" />
+              <span>Configuración</span>
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Notification Center */}
+        {showNotifications && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-6 backdrop-blur-lg bg-white/10 rounded-2xl p-4 border border-white/20"
+          >
+            <NotificationCenter 
+              onClose={() => setShowNotifications(false)}
+              isVisible={showNotifications}
+            />
+          </motion.div>
+        )}
+
+        {/* Render Module Content */}
+        {activeModule === 'users' && (
+          <motion.div
+            key="users"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-6"
+          >
+            <UserManagement />
+          </motion.div>
+        )}
+
+        {activeModule === 'schedules' && (
+          <motion.div
+            key="schedules"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-6"
+          >
+            <ScheduleManagement />
+          </motion.div>
+        )}
+
+        {activeModule === 'facilities' && (
+          <motion.div
+            key="facilities"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-6"
+          >
+            <RoomManagement />
+          </motion.div>
+        )}
+
+        {activeModule === 'settings' && (
+          <motion.div
+            key="settings"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-6"
+          >
+            <SystemSettings />
+          </motion.div>
+        )}
+
+        {/* Dashboard Content - Only show when dashboard is active */}
+        {activeModule === 'dashboard' && (
+          <>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statsCards.map((stat, index) => (
@@ -349,7 +500,7 @@ const AdminDashboard = () => {
           className="mt-6 backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20"
         >
           <h2 className="text-xl font-semibold text-white mb-4">Acciones Rápidas</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <Link to="/appointments/new">
               <button className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-600 hover:to-indigo-700 transition duration-200 flex items-center justify-center">
                 <Calendar className="h-5 w-5 mr-2" />
@@ -362,10 +513,22 @@ const AdminDashboard = () => {
                 Registrar Paciente
               </button>
             </Link>
-            <Link to="/check-in">
+            <Link to="/pharmacy/inventory">
+              <button className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium rounded-xl hover:from-purple-600 hover:to-indigo-700 transition duration-200 flex items-center justify-center">
+                <Package className="h-5 w-5 mr-2" />
+                Inventario
+              </button>
+            </Link>
+            <Link to="/pharmacy/low-stock">
+              <button className="w-full py-3 px-4 bg-gradient-to-r from-red-500 to-orange-600 text-white font-medium rounded-xl hover:from-red-600 hover:to-orange-700 transition duration-200 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 mr-2" />
+                Stock Bajo
+              </button>
+            </Link>
+            <Link to="/pharmacy/medicine-entry">
               <button className="w-full py-3 px-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition duration-200 flex items-center justify-center border border-white/20">
-                <CheckSquare className="h-5 w-5 mr-2" />
-                Check-in
+                <Pill className="h-5 w-5 mr-2" />
+                Agregar Medicamento
               </button>
             </Link>
             <Link to="/reports">
@@ -376,6 +539,8 @@ const AdminDashboard = () => {
             </Link>
           </div>
         </motion.div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -44,7 +44,7 @@ const EmergencyDashboard = () => {
       change: 'En emergencia',
       icon: Users,
       color: 'from-red-500 to-red-600',
-      link: '/emergency/patients',
+      link: '/emergency/queue',
     },
     {
       title: 'Casos Críticos',
@@ -52,7 +52,7 @@ const EmergencyDashboard = () => {
       change: stats?.critical_change || '+0%',
       icon: AlertTriangle,
       color: 'from-red-600 to-red-700',
-      link: '/emergency/critical',
+      link: '/emergency/critical-cases',
     },
     {
       title: 'Tiempo Promedio',
@@ -164,7 +164,7 @@ const EmergencyDashboard = () => {
               <span className="text-sm text-red-200">
                 {emergencyPatients?.length || 0} pacientes
               </span>
-              <Link to="/emergency/add" className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition duration-200">
+              <Link to="/emergency/new" className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition duration-200">
                 <Plus className="h-4 w-4 inline mr-1" />
                 Nuevo
               </Link>
@@ -256,7 +256,7 @@ const EmergencyDashboard = () => {
                 <Heart className="h-5 w-5 mr-2 text-red-400" />
                 Casos Críticos Activos
               </h2>
-              <Link to="/emergency/critical" className="text-red-300 hover:text-red-200 text-sm flex items-center">
+              <Link to="/emergency/critical-cases" className="text-red-300 hover:text-red-200 text-sm flex items-center">
                 Ver todos <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
             </div>

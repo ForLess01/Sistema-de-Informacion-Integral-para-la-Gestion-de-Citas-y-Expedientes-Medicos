@@ -34,7 +34,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    """Serializer para crear usuarios"""
+    """Serializer para crear usuarios pacientes desde el frontend web"""
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True)
     
@@ -42,8 +42,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'email', 'password', 'password_confirm', 'first_name', 'last_name',
-            'dni', 'birth_date', 'gender', 'phone', 'role'
-        ]
+            'dni', 'birth_date', 'gender', 'phone'
+        ]  # Removemos 'role' porque se asigna automáticamente
     
     def validate(self, data):
         if data['password'] != data['password_confirm']:
@@ -53,6 +53,10 @@ class UserCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         password = validated_data.pop('password')
+        
+        # Asignar automáticamente el rol de paciente
+        validated_data['role'] = 'patient'
+        
         user = User.objects.create_user(**validated_data)
         user.set_password(password)
         user.save()
@@ -103,7 +107,7 @@ class LoginSerializer(serializers.Serializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """Serializer personalizado para JWT"""
+    """Serializer personalizado para JWT exclusivo para pacientes (frontend web)"""
     
     def validate(self, attrs):
         # Primero validar las credenciales
@@ -111,6 +115,15 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         # Obtener el usuario autenticado
         user = self.user
+        
+        # Verificar que el usuario sea un paciente
+        if user.role != 'patient':
+            raise serializers.ValidationError({
+                'non_field_errors': [
+                    f'Acceso denegado. Esta plataforma web es exclusiva para pacientes. '
+                    f'Los usuarios con rol "{user.get_role_display()}" deben usar la aplicación de escritorio del hospital.'
+                ]
+            })
         
         # Serializar información del usuario
         user_serializer = UserSerializer(user)
@@ -129,17 +142,46 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             data['user'] = user_serializer.data
         
         return data
+
+
+class DesktopTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Serializer personalizado para JWT de la aplicación desktop (personal médico y administrativo)"""
     
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
+    def validate(self, attrs):
+        # Primero validar las credenciales
+        data = super().validate(attrs)
         
-        # Agregar información adicional al token
-        token['email'] = user.email
-        token['role'] = user.role
-        token['full_name'] = user.get_full_name()
+        # Obtener el usuario autenticado
+        user = self.user
         
-        return token
+        # Verificar que el usuario NO sea un paciente (desktop es para personal)
+        if user.role == 'patient':
+            raise serializers.ValidationError({
+                'non_field_errors': [
+                    f'Acceso denegado. Los pacientes deben usar la plataforma web. '
+                    f'Esta aplicación de escritorio está restringida al personal médico y administrativo.'
+                ]
+            })
+        
+        # Serializar información del usuario
+        user_serializer = UserSerializer(user)
+        
+        # Agregar información sobre 2FA
+        data['two_factor_enabled'] = user.two_factor_enabled
+        data['requires_2fa'] = user.two_factor_enabled
+        
+        # Si el usuario tiene 2FA habilitado, no devolver los tokens aún
+        if user.two_factor_enabled:
+            data.pop('refresh', None)
+            data.pop('access', None)
+            data['message'] = 'Se requiere código de autenticación de dos factores'
+        else:
+            # Si no tiene 2FA, incluir la información del usuario completa
+            data['user'] = user_serializer.data
+        
+        return data
+
+
 
 
 class ChangePasswordSerializer(serializers.Serializer):

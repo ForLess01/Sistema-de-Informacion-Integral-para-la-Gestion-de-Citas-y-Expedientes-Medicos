@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Exponer APIs seguras al contexto del renderer
 contextBridge.exposeInMainWorld('electronAPI', {
   // Autenticación
-  loginSuccess: () => ipcRenderer.invoke('login-success'),
+  loginSuccess: (userData) => ipcRenderer.invoke('login-success', userData),
   logout: () => ipcRenderer.invoke('logout'),
 
   // Navegación
